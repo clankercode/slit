@@ -53,7 +53,7 @@ run-go *args:
     cd go && go run . {{args}}
 
 run-rust *args:
-    cd rust && cargo run --release -- {{args}}
+    cd rust && cargo build --release && ./target/release/slit {{args}}
 
 run-c *args:
     cd c && make build && ./slit {{args}}
