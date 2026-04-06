@@ -49,6 +49,15 @@ deps:
 run *args:
     cd go && go run . {{args}}
 
+run-go *args:
+    cd go && go run . {{args}}
+
+run-rust *args:
+    cd rust && cargo run --release -- {{args}}
+
+run-c *args:
+    cd c && make build && ./c/slit {{args}}
+
 completions: build
     mkdir -p completions
     ./go/slit completion bash > completions/slit.bash
