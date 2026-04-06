@@ -278,10 +278,15 @@ def main():
     if args.ansi:
         modes.append(("ansi", generate_ansi))
 
+    t_overall_start = time.monotonic()
+
+    total_runs = len(modes) * len(size_keys) * len(impls) * args.iterations
+    run_idx = 0
+
     # header
-    print(f"\n{'='*80}")
-    print(f"  slit benchmark  |  {args.iterations} iteration{'s' if args.iterations != 1 else ''} (median)")
-    print(f"{'='*80}\n")
+    print(f"\n{'='*90}")
+    print(f"  slit benchmark  |  {args.iterations} iteration{'s' if args.iterations != 1 else ''} (median)  |  {total_runs} total runs")
+    print(f"{'='*90}\n")
 
     for mode_name, gen_fn in modes:
         print(f"  [{mode_name} input]")
@@ -289,10 +294,10 @@ def main():
 
         header = (
             f"  {'Impl':<6} {'Lines':>10} {'Input':>10} "
-            f"{'Wall':>8} {'Lines/s':>12} {'MB/s':>8} {'Peak RSS':>10}"
+            f"{'Wall':>8} {'Lines/s':>12} {'MB/s':>8} {'Peak RSS':>10}  {'Runs':>10}"
         )
         print(header)
-        print(f"  {'-'*6} {'-'*10} {'-'*10} {'-'*8} {'-'*12} {'-'*8} {'-'*10}")
+        print(f"  {'-'*6} {'-'*10} {'-'*10} {'-'*8} {'-'*12} {'-'*8} {'-'*10}  {'-'*10}")
 
         for size_key in size_keys:
             count = LINE_COUNTS.get(size_key)
@@ -300,14 +305,21 @@ def main():
                 print(f"  Unknown size: {size_key}", file=sys.stderr)
                 continue
 
+            t_gen = time.monotonic()
             input_data = gen_fn(count)
+            t_gen = time.monotonic() - t_gen
             input_mb = len(input_data) / (1024 * 1024)
 
             for impl_name, binary in impls:
                 results = []
+                run_durations = []
                 for i in range(args.iterations):
+                    run_idx += 1
+                    t_run = time.monotonic()
                     r = run_benchmark(binary, input_data)
+                    t_run = time.monotonic() - t_run
                     results.append(r)
+                    run_durations.append(t_run)
 
                 # take median by wall_s
                 results.sort(key=lambda r: r["wall_s"])
@@ -317,13 +329,24 @@ def main():
                 lps = count / wall if wall > 0 else 0
                 mbps = input_mb / wall if wall > 0 else 0
 
+                run_total = sum(run_durations)
+                runs_str = f"{run_total:.1f}s ({args.iterations}x{run_total/args.iterations:.1f}s)"
+
                 print(
                     f"  {impl_name:<6} {count:>10,} {fmt_bytes(len(input_data)):>10} "
-                    f"{wall:>7.2f}s {lps:>11,.0f} {mbps:>7.1f}  {fmt_kb(med['peak_rss_kb']):>10}"
+                    f"{wall:>7.2f}s {lps:>11,.0f} {mbps:>7.1f}  {fmt_kb(med['peak_rss_kb']):>10}  {runs_str:>10}"
                 )
             print()
 
-    print(f"{'='*80}\n")
+    t_overall = time.monotonic() - t_overall_start
+    mins = int(t_overall // 60)
+    secs = t_overall % 60
+    if mins > 0:
+        overall_str = f"{mins}m {secs:.1f}s"
+    else:
+        overall_str = f"{secs:.1f}s"
+    print(f"  Overall: {overall_str}  ({run_idx}/{total_runs} runs)")
+    print(f"{'='*90}\n")
 
 
 if __name__ == "__main__":
