@@ -3,7 +3,14 @@ use clap_complete::{generate, shells::*};
 use std::io;
 use std::path::PathBuf;
 
+pub mod app;
+pub mod buffer;
 pub mod config;
+pub mod debug;
+pub mod layout;
+pub mod render;
+pub mod spinner;
+pub mod tee;
 
 use config::Config;
 
@@ -14,77 +21,77 @@ use config::Config;
 #[command(version)]
 pub struct Cli {
     #[arg(short = 'n', long, help = "Number of lines to display (0 = auto/terminal height - 1)")]
-    lines: Option<usize>,
+    pub lines: Option<usize>,
 
-    #[arg(long, help = "Maximum number of lines to buffer", default_value = "50000")]
-    max_lines: usize,
+    #[arg(long, help = "Maximum number of lines to buffer")]
+    pub max_lines: Option<usize>,
 
-    #[arg(short = 'o', long, help = "Write output to file")]
-    output: Option<PathBuf>,
+    #[arg(short = 'o', long, help = "Write output to file", value_hint = clap::ValueHint::FilePath)]
+    pub output: Option<PathBuf>,
 
     #[arg(short = 'a', long, help = "Append to output file instead of overwriting")]
-    append: bool,
+    pub append: bool,
 
-    #[arg(long, value_enum, help = "Tee output format (raw, display)", default_value = "raw")]
-    tee_format: TeeFormat,
+    #[arg(long, value_enum, help = "Tee output format (raw, display)")]
+    pub tee_format: Option<TeeFormat>,
 
     #[arg(short = 'l', long, help = "Show line numbers")]
-    line_numbers: bool,
+    pub line_numbers: bool,
 
-    #[arg(long, value_enum, help = "Color output (auto, always, never)", default_value = "auto")]
-    color: ColorMode,
+    #[arg(long, value_enum, help = "Color output (auto, always, never)")]
+    pub color: Option<ColorMode>,
 
     #[arg(short = 'w', long, help = "Wrap long lines")]
-    wrap: bool,
+    pub wrap: bool,
 
     #[arg(short = 't', long, help = "Show timestamps")]
-    timestamp: bool,
+    pub timestamp: bool,
 
-    #[arg(long, help = "Character used for truncation indicator", default_value = "…")]
-    truncation_char: String,
+    #[arg(long, help = "Character used for truncation indicator")]
+    pub truncation_char: Option<String>,
 
-    #[arg(long, value_enum, help = "Layout style", default_value = "minimal")]
-    layout: LayoutType,
+    #[arg(long, value_enum, help = "Layout style")]
+    pub layout: Option<LayoutType>,
 
     #[arg(long, help = "Use box layout (shortcut for --layout=box)")]
-    box_layout: bool,
+    pub box_layout: bool,
 
     #[arg(long, help = "Use rounded layout (shortcut for --layout=rounded)")]
-    rounded: bool,
+    pub rounded: bool,
 
     #[arg(long, help = "Use compact layout (shortcut for --layout=compact)")]
-    compact: bool,
+    pub compact: bool,
 
     #[arg(long, help = "Use minimal layout (shortcut for --layout=minimal)")]
-    minimal: bool,
+    pub minimal: bool,
 
     #[arg(long, help = "Use no layout (shortcut for --layout=none)")]
-    none: bool,
+    pub none: bool,
 
     #[arg(long, help = "Use quote layout (shortcut for --layout=quote)")]
-    quote: bool,
+    pub quote: bool,
 
-    #[arg(long, value_enum, help = "Quote background style", default_value = "off")]
-    quote_bg: QuoteBg,
+    #[arg(long, value_enum, help = "Quote background style")]
+    pub quote_bg: Option<QuoteBg>,
 
-    #[arg(long, value_enum, help = "Spinner style (braille, dots, arrows, off)", default_value = "braille")]
-    spinner: SpinnerStyle,
+    #[arg(long, value_enum, help = "Spinner style (braille, dots, arrows, off)")]
+    pub spinner: Option<SpinnerStyle>,
 
     #[arg(short = 'd', long, help = "Enable debug logging")]
-    debug: bool,
+    pub debug: bool,
 
-    #[arg(long, help = "Write debug logs to file")]
-    log_file: Option<PathBuf>,
+    #[arg(long, help = "Write debug logs to file", value_hint = clap::ValueHint::FilePath)]
+    pub log_file: Option<PathBuf>,
 
     #[arg(long, help = "Generate man page to stdout", hide = true)]
-    generate_man: bool,
+    pub generate_man: bool,
 
     #[command(subcommand)]
-    command: Option<Commands>,
+    pub command: Option<Commands>,
 }
 
 #[derive(Subcommand)]
-enum Commands {
+pub enum Commands {
     #[command(about = "Generate shell completion script")]
     Completion {
         #[arg(value_enum)]
@@ -141,7 +148,7 @@ async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     if cli.generate_man {
-        generate_man_page().await?;
+        generate_man_page()?;
         return Ok(());
     }
 
@@ -153,30 +160,34 @@ async fn main() -> anyhow::Result<()> {
         None => {}
     }
 
-    // Load and resolve configuration
     let config = Config::resolve(&cli)?;
-    println!("slit initialized with config: {:?}", config);
-    
+
+    if !app::is_stderr_tty() {
+        app::passthrough().await?;
+        return Ok(());
+    }
+
+    let mut app = app::App::new(config);
+    app.run().await?;
+
     Ok(())
 }
 
-async fn generate_man_page() -> anyhow::Result<()> {
+fn generate_man_page() -> anyhow::Result<()> {
     let cmd = <Cli as clap::CommandFactory>::command();
     let man = clap_mangen::Man::new(cmd);
     let mut buffer: Vec<u8> = Default::default();
     man.render(&mut buffer)?;
-    println!("{}", String::from_utf8(buffer)?);
+    print!("{}", String::from_utf8(buffer)?);
     Ok(())
 }
 
 fn generate_completion(shell: Shell) -> anyhow::Result<()> {
     let mut cmd = <Cli as clap::CommandFactory>::command();
-    
     match shell {
         Shell::Bash => generate(Bash, &mut cmd, "slit", &mut io::stdout()),
         Shell::Zsh => generate(Zsh, &mut cmd, "slit", &mut io::stdout()),
         Shell::Fish => generate(Fish, &mut cmd, "slit", &mut io::stdout()),
     }
-    
     Ok(())
 }

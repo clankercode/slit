@@ -115,34 +115,44 @@ impl Config {
         if let Some(lines) = cli.lines {
             self.lines = lines;
         }
-        self.max_lines = cli.max_lines;
+        if let Some(max_lines) = cli.max_lines {
+            self.max_lines = max_lines;
+        }
         if cli.output.is_some() {
             self.output = cli.output.clone();
         }
         if cli.append {
             self.append = cli.append;
         }
-        self.tee_format = format!("{:?}", cli.tee_format).to_lowercase();
+        if let Some(tee_format) = cli.tee_format {
+            self.tee_format = format!("{:?}", tee_format).to_lowercase();
+        }
         if cli.line_numbers {
             self.line_numbers = cli.line_numbers;
         }
-        self.color = format!("{:?}", cli.color).to_lowercase();
+        if let Some(color) = cli.color {
+            self.color = format!("{:?}", color).to_lowercase();
+        }
         if cli.wrap {
             self.wrap = cli.wrap;
         }
         if cli.timestamp {
             self.timestamp = cli.timestamp;
         }
-        self.truncation_char = cli.truncation_char.clone();
+        if let Some(ref truncation_char) = cli.truncation_char {
+            self.truncation_char = truncation_char.clone();
+        }
 
-        // Handle layout resolution (shortcuts take precedence over --layout)
-        let layout = resolve_layout(cli);
-        if !layout.is_empty() {
+        if let Some(layout) = resolve_layout(cli) {
             self.layout = layout;
         }
 
-        self.quote_bg = format!("{:?}", cli.quote_bg).to_lowercase();
-        self.spinner = format!("{:?}", cli.spinner).to_lowercase();
+        if let Some(quote_bg) = cli.quote_bg {
+            self.quote_bg = format!("{:?}", quote_bg).to_lowercase();
+        }
+        if let Some(spinner) = cli.spinner {
+            self.spinner = format!("{:?}", spinner).to_lowercase();
+        }
         if cli.debug {
             self.debug = cli.debug;
         }
@@ -152,26 +162,26 @@ impl Config {
     }
 }
 
-fn resolve_layout(cli: &crate::Cli) -> String {
+fn resolve_layout(cli: &crate::Cli) -> Option<String> {
     if cli.box_layout {
-        return "box".to_string();
+        return Some("box".to_string());
     }
     if cli.rounded {
-        return "rounded".to_string();
+        return Some("rounded".to_string());
     }
     if cli.compact {
-        return "compact".to_string();
+        return Some("compact".to_string());
     }
     if cli.minimal {
-        return "minimal".to_string();
+        return Some("minimal".to_string());
     }
     if cli.none {
-        return "none".to_string();
+        return Some("none".to_string());
     }
     if cli.quote {
-        return "quote".to_string();
+        return Some("quote".to_string());
     }
-    format!("{:?}", cli.layout).to_lowercase()
+    cli.layout.map(|l| format!("{:?}", l).to_lowercase())
 }
 
 /// Load config from file if it exists
