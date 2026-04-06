@@ -570,6 +570,7 @@ int main(int argc, char *argv[]) {
 
     int eof_reached = 0;
     int spinner_frame = 0;
+    int render_count = 0;
     int prev_height = 0;
     int dirty = 0;
     struct timespec last_render_time = {0, 0};
@@ -662,7 +663,9 @@ int main(int argc, char *argv[]) {
                               (now.tv_nsec - last_render_time.tv_nsec) / 1000000L;
             if (force_render_now || elapsed_ms >= RENDER_INTERVAL_MS) {
                 last_render_time = now;
-                spinner_frame++;
+                render_count++;
+                if (render_count % SPINNER_THROTTLE == 0)
+                    spinner_frame++;
                 render_frame(&cfg, buf, term_cols, term_rows, content_lines,
                              spinner_frame, eof_reached, file_size, prev_height, &prev_height);
 
