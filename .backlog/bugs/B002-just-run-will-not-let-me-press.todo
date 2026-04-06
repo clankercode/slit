@@ -1,10 +1,14 @@
 ---
+claimed_at: "2026-04-06T12:23:20Z"
+claimed_by: cli-user
+completed_at: null
 complexity: medium
 depends_on: []
 estimate_hours: 1
 id: B002
 priority: high
-status: pending
+started_at: "2026-04-06T12:23:20Z"
+status: in_progress
 tags: []
 title: '`just run` will not let me press q or ctrl+c (go client)'
 ---
