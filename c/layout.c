@@ -38,6 +38,12 @@ int layout_data_lines(enum layout_type type, int content_lines) {
 static void pad_to(FILE *fp, const char *s, int width) {
     if (!s) s = "";
     size_t vis = visible_strlen(s);
+    if ((int)vis > width) {
+        char tmp[4096];
+        trim_line(s, tmp, sizeof(tmp), (size_t)width, "");
+        fputs(tmp, fp);
+        return;
+    }
     fputs(s, fp);
     if ((int)vis < width) {
         for (int i = (int)vis; i < width; i++) fputc(' ', fp);

@@ -638,8 +638,6 @@ int main(int argc, char *argv[]) {
 
                 if (tw) tee_write_line(tw, line);
 
-                fprintf(stdout, "%s\n", line);
-                fflush(stdout);
                 dirty = 1;
             } while (can_drain);
         }
