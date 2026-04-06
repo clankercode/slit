@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 )
 
@@ -20,6 +21,7 @@ func NewTeeWriter(path string, append bool) *TeeWriter {
 
 	f, err := os.OpenFile(path, flags, 0644)
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "slit: warning: cannot open tee file %q: %v\n", path, err)
 		return nil
 	}
 
