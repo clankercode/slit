@@ -1,4 +1,6 @@
 use clap::{Parser, Subcommand, ValueEnum};
+use clap_complete::{generate, shells::*};
+use std::io;
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -86,27 +88,27 @@ enum Commands {
     },
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 enum Shell {
     Bash,
     Zsh,
     Fish,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 enum TeeFormat {
     Raw,
     Display,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 enum ColorMode {
     Auto,
     Always,
     Never,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 enum LayoutType {
     Box,
     Rounded,
@@ -116,13 +118,13 @@ enum LayoutType {
     Quote,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 enum QuoteBg {
     Off,
     On,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 enum SpinnerStyle {
     Braille,
     Dots,
@@ -163,9 +165,6 @@ async fn generate_man_page() -> anyhow::Result<()> {
 }
 
 fn generate_completion(shell: Shell) -> anyhow::Result<()> {
-    use clap_complete::{generate, shells::*};
-    use std::io;
-
     let mut cmd = <Cli as clap::CommandFactory>::command();
     
     match shell {

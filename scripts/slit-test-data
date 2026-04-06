@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-import sys, time, random, math
+import sys, time, random, math, os, itertools
 
-COLORS = [196, 202, 208, 214, 220, 226, 190, 154, 118, 82, 46, 47, 48, 49, 51, 45, 39, 33, 27, 21, 57, 93, 129, 165]
-CHUNKS = "▓▒░█▄▀▐▌●◆★◇◈⬟⬡◉◎⬢⬣◈◆▸▹▽△♤♧♡♢♠♣♥♦"
-
+# ANSI helpers
 def fg(c, bold=False):
-    b = "1;" if bold else ""
-    return f"\033[{b}38;5;{c}m"
+    return f"\033[{'1;' if bold else ''}38;5;{c}m"
+
+def bg(c):
+    return f"\033[48;5;{c}m"
 
 def rgb(r, g, b):
     return f"\033[38;2;{r};{g};{b}m"
@@ -14,103 +14,458 @@ def rgb(r, g, b):
 def reset():
     return "\033[0m"
 
-def waterfall_line(i, width):
-    phase = i * 0.07
-    color_idx = int((math.sin(phase) * 0.5 + 0.5) * (len(COLORS) - 1))
-    c = COLORS[color_idx % len(COLORS)]
+def clear():
+    return "\033[2J\033[H"
 
-    bar_len = int((math.sin(phase * 1.3) * 0.5 + 0.5) * (width - 20)) + 5
-    bar_len = min(bar_len, width - 2)
-
-    r = int(80 + 175 * (math.sin(phase) * 0.5 + 0.5))
-    g = int(80 + 175 * (math.sin(phase + 2.1) * 0.5 + 0.5))
-    b_val = int(80 + 175 * (math.sin(phase + 4.2) * 0.5 + 0.5))
-
-    chunk = random.choice(CHUNKS)
-    bar = chunk * bar_len
-    line_num = f"{fg(c, bold=True)}{i:>5}{reset()}"
-    sep = f"{fg(c)}│{reset()}"
-    colored_bar = f"{rgb(r, g, b_val)}{bar}{reset()}"
-
-    spinner_frames = "⣾⣽⣻⢿⡿⣟⣯⣷"
-    sp = spinner_frames[i % len(spinner_frames)]
-
-    return f"{line_num} {sep} {colored_bar} {sep} {fg(c)}{sp}{reset()}"
+def hsl_to_rgb(h, s, l):
+    c = (1 - abs(2 * l - 1)) * s
+    x = c * (1 - abs(((h / 60) % 2) - 1))
+    m = l - c / 2
+    if h < 60: r, g, b = c, x, 0
+    elif h < 120: r, g, b = x, c, 0
+    elif h < 180: r, g, b = 0, c, x
+    elif h < 240: r, g, b = 0, x, c
+    elif h < 300: r, g, b = x, 0, c
+    else: r, g, b = c, 0, x
+    return int((r+m)*255), int((g+m)*255), int((b+m)*255)
 
 def banner(text, color):
     w = len(text) + 6
-    top = f"{fg(color, bold=True)}╔{'═' * w}╗{reset()}"
-    mid = f"{fg(color, bold=True)}║  {text}  ║{reset()}"
-    bot = f"{fg(color, bold=True)}╚{'═' * w}╝{reset()}"
+    top = f"{fg(color, True)}╔{'═' * w}╗{reset()}"
+    mid = f"{fg(color, True)}║  {text}  ║{reset()}"
+    bot = f"{fg(color, True)}╚{'═' * w}╝{reset()}"
     return f"{top}\n{mid}\n{bot}"
 
-def phase_rain(rows):
+# Existing effects
+def phase_rain(rows, width):
+    chunks = "▓▒░█▄▀▐▌●◆★◇◈⬟⬡◉◎⬢⬣"
+    colors = [196, 202, 208, 214, 220, 226, 190, 154, 118, 82, 46, 47, 48, 49, 51, 45, 39, 33]
     for i in range(rows):
-        ci = int((i / rows) * (len(COLORS) - 1))
-        c = COLORS[ci]
-        width = random.randint(10, 60)
-        chunk = random.choice(CHUNKS)
-        yield f"{fg(c)}{chunk * width}{reset()}"
+        ci = int((i / rows) * (len(colors) - 1))
+        c = colors[ci]
+        w = random.randint(10, width - 10)
+        yield f"{fg(c)}{random.choice(chunks) * w}{reset()}"
         time.sleep(0.02)
 
-def phase_matrix(rows):
+def phase_matrix(rows, width):
     chars = "01ｱｲｳｴｵｶｷｸｹｺ"
     for i in range(rows):
         line = ""
-        for _ in range(random.randint(30, 70)):
+        for _ in range(random.randint(30, width)):
             ch = random.choice(chars)
             brightness = random.randint(100, 255)
             line += f"\033[38;2;0;{brightness};0m{ch}"
-        line += reset()
-        yield line
+        yield line + reset()
         time.sleep(0.03)
 
-def phase_gradient(rows):
+def phase_gradient(rows, width):
     for i in range(rows):
         parts = []
-        for j in range(60):
+        for j in range(width):
             hue = (i * 3 + j * 5) % 360
-            s, l = 0.9, 0.55
-            c = (1 - abs(2 * l - 1)) * s
-            x = c * (1 - abs((hue / 60) % 2 - 1))
-            m = l - c / 2
-            if hue < 60: r, g, b = c, x, 0
-            elif hue < 120: r, g, b = x, c, 0
-            elif hue < 180: r, g, b = 0, c, x
-            elif hue < 240: r, g, b = 0, x, c
-            elif hue < 300: r, g, b = x, 0, c
-            else: r, g, b = c, 0, x
-            parts.append(f"\033[38;2;{int((r+m)*255)};{int((g+m)*255)};{int((b+m)*255)}m█")
+            r, g, b = hsl_to_rgb(hue, 0.9, 0.55)
+            parts.append(f"\033[38;2;{r};{g};{b}m█")
         yield "".join(parts) + reset()
         time.sleep(0.025)
 
-def phase_waterfall(rows):
+def phase_waterfall(rows, width):
+    colors = [196, 202, 208, 214, 220, 226, 190, 154, 118, 82, 46, 47, 48, 49, 51, 45]
+    chunks = "▓▒░█▄▀▐▌●◆★◇◈⬟⬡◉◎⬢⬣♤♧♡♢♠♣♥♦"
     for i in range(rows):
-        yield waterfall_line(i, 72)
+        phase = i * 0.07
+        c = colors[int((math.sin(phase) * 0.5 + 0.5) * (len(colors)-1))]
+        bar_len = int((math.sin(phase * 1.3) * 0.5 + 0.5) * (width - 20)) + 5
+        bar_len = min(bar_len, width - 2)
+        r = int(80 + 175 * (math.sin(phase) * 0.5 + 0.5))
+        g = int(80 + 175 * (math.sin(phase + 2.1) * 0.5 + 0.5))
+        b = int(80 + 175 * (math.sin(phase + 4.2) * 0.5 + 0.5))
+        chunk = random.choice(chunks)
+        spinner = "⣾⣽⣻⢿⡿⣟⣯⣷"[i % 8]
+        yield f"{fg(c, True)}{i:>5}{reset()} {fg(c)}│{reset()} {rgb(r,g,b)}{chunk * bar_len}{reset()} {fg(c)}│{reset()} {fg(c)}{spinner}{reset()}"
         time.sleep(0.015)
 
-def main():
-    width = 72
+# New effects
+def phase_aurora(rows, width):
+    """Rippling aurora curtains with starfield background"""
+    stars = set(random.sample(range(width), width // 20))
+    aurora_colors = [(46, 250, 80), (0, 255, 200), (0, 150, 255), (180, 0, 255), (255, 0, 180)]
+    for row in range(rows):
+        line = []
+        for x in range(width):
+            if x in stars and random.random() < 0.3:
+                line.append(f"{fg(250)}·{reset()}")
+                continue
+            # Multiple overlapping sine waves
+            v1 = math.sin((x + row * 2) * 0.1)
+            v2 = math.sin((x + row * 3) * 0.07)
+            v3 = math.sin((x + row * 1.5) * 0.15)
+            intensity = (v1 + v2 * 0.5 + v3 * 0.3) / 1.8
+            if intensity > 0.2:
+                color_idx = int((intensity + 1) * 0.5 * (len(aurora_colors) - 1))
+                color_idx = max(0, min(color_idx, len(aurora_colors) - 1))
+                r, g, b = aurora_colors[color_idx]
+                # Density based on intensity
+                density = " ░▒▓█"[min(int(intensity * 5), 4)]
+                line.append(rgb(r, g, b) + density + reset())
+            else:
+                line.append(" ")
+        yield "".join(line)
+        time.sleep(0.03)
 
-    print(banner("~ slit test data ~", 51))
-    time.sleep(0.3)
+def phase_cherry_blossom(rows, width):
+    """Pink petals drifting past sunset gradient sky"""
+    petals = []
+    # Initialize some petals
+    for _ in range(15):
+        petals.append({
+            'x': random.randint(0, width),
+            'y': random.randint(-20, rows),
+            'speed': random.uniform(0.3, 1.0),
+            'char': random.choice(['✿', '❀', '✾', '❁']),
+            'phase': random.uniform(0, math.pi * 2),
+            'color': random.choice([(255, 183, 197), (255, 218, 224), (255, 228, 230)])
+        })
+    
+    for row in range(rows):
+        # Sky gradient from warm pink to twilight blue
+        sky_progress = row / rows
+        sr, sg, sb = hsl_to_rgb(340 - sky_progress * 60, 0.7, 0.3 + sky_progress * 0.2)
+        
+        line = [bg(16) + fg(16) + " " + reset() for _ in range(width)]
+        
+        # Update and draw petals
+        for p in petals:
+            p['y'] += p['speed']
+            p['x'] += math.sin(row * 0.05 + p['phase']) * 0.5
+            if p['y'] > rows:
+                p['y'] = -5
+                p['x'] = random.randint(0, width)
+            
+            if 0 <= int(p['x']) < width and 0 <= int(p['y']) < row:
+                x = int(p['x'])
+                r, g, b = p['color']
+                line[x] = rgb(r, g, b) + p['char'] + reset()
+        
+        # Add sky gradient background
+        sky = rgb(sr, sg, sb) + " " * width + reset()
+        yield sky + "".join(line)
+        time.sleep(0.04)
 
-    print(f"\033[3m{fg(246)}A colorful waterfall of streaming output for testing slit.{reset()}\n")
-    time.sleep(0.5)
+def phase_sierpinski(rows, width):
+    """Sierpinski triangle scrolling down with depth coloring"""
+    colors = [(0, 0, 128), (0, 128, 255), (128, 0, 255), (255, 128, 0), (255, 255, 0)]
+    offset = random.randint(0, 1000)
+    for row in range(rows):
+        line = []
+        n = row + offset
+        for k in range(min(n + 1, width)):
+            # Sierpinski: binomial(n,k) % 2 == 1
+            if (math.comb(n, k) & 1) == 1:
+                depth = bin(n & k).count('1') % len(colors)
+                r, g, b = colors[depth]
+                line.append(rgb(r, g, b) + "▲" + reset())
+            else:
+                line.append(" ")
+        yield "".join(line)
+        time.sleep(0.02)
 
-    phases = [
-        ("rain", phase_rain),
-        ("matrix", phase_matrix),
-        ("gradient", phase_gradient),
-        ("waterfall", phase_waterfall),
+def phase_spectrum(rows, width):
+    """Fake audio spectrum waterfall"""
+    bars = " ▁▂▃▄▅▆▇█"
+    heat_colors = [
+        (26, 26, 92), (26, 64, 128), (26, 128, 128), (26, 192, 64),
+        (128, 255, 0), (255, 255, 0), (255, 192, 0), (255, 128, 0), (255, 64, 64), (255, 255, 255)
     ]
+    bins = min(64, width // 2)
+    time_phase = 0
+    for row in range(rows):
+        values = []
+        for i in range(bins):
+            # Layered sine waves for realistic spectrum
+            v = (math.sin(time_phase + i * 0.3) * 0.5 + 
+                 math.sin(time_phase * 1.5 + i * 0.1) * 0.3 +
+                 math.sin(time_phase * 0.7 + i * 0.5) * 0.2)
+            v = (v + 1) / 2  # normalize to 0-1
+            # Add some noise
+            v += random.gauss(0, 0.1)
+            v = max(0, min(1, v))
+            values.append(v)
+        
+        time_phase += 0.2
+        
+        # Draw bars
+        line_parts = []
+        for v in values:
+            intensity = int(v * (len(bars) - 1))
+            color_idx = int(v * (len(heat_colors) - 1))
+            r, g, b = heat_colors[color_idx]
+            line_parts.append(rgb(r, g, b) + bars[intensity])
+        
+        yield "".join(line_parts) + reset()
+        time.sleep(0.025)
 
-    while True:
-        for name, gen in phases:
+def phase_cyberdeck(rows, width):
+    """Multi-phase boot sequence"""
+    phases = [
+        ("POST", 8),
+        ("Hardware Probe", 12),
+        ("Loading Kernel", 10),
+        ("Boot Sequence", 15)
+    ]
+    
+    # Phase 1: POST memory test
+    yield f"{fg(46, True)}BIOS POST v2.4.1{reset()}"
+    time.sleep(0.2)
+    for addr in range(0x00000, 0x10000, 0x1000):
+        yield f"{fg(40)}Memory Test: 0x{addr:05X} OK{reset()}"
+        time.sleep(0.05)
+    
+    # Phase 2: Hardware probe
+    devices = ["CPU: QuantumCore i9", "GPU: NeuralLink Pro", "RAM: 128TB Quantum", "NET: HyperLAN 9000"]
+    for dev in devices:
+        status = f"[{fg(46)}OK{reset()}]" if random.random() > 0.1 else f"[{fg(202)}WARN{reset()}]"
+        yield f"{fg(51)}>{reset()} {dev} {status}"
+        time.sleep(0.15)
+    
+    # Phase 3: Loading bar
+    for pct in range(0, 101, 5):
+        bar = "█" * (pct // 5) + "░" * (20 - pct // 5)
+        yield f"{fg(214)}Loading... [{bar}] {pct}%{reset()}"
+        time.sleep(0.08)
+    
+    # Phase 4: Kernel spam
+    for i in range(20):
+        mod = random.choice(["usbcore", "nvme", "netfilter", "crypto_api", "scheduler"])
+        msg = random.choice(["initialized", "registered", "loaded", "mounted", "linked"])
+        yield f"{fg(250)}[{time.strftime('%H:%M:%S')}]{reset()} {fg(39)}kernel:{reset()} {mod}: {msg}"
+        time.sleep(0.05)
+    
+    # Phase 5: Cyberpunk final
+    yield clear()
+    yield f"{rgb(255, 0, 128)}╔{'═' * (width-2)}╗{reset()}"
+    yield f"{rgb(255, 0, 128)}║{' ' * (width-2)}║{reset()}"
+    yield f"{rgb(255, 0, 128)}║{rgb(0, 255, 255)}{'   SYSTEM ONLINE'.center(width-2)}{rgb(255, 0, 128)}║{reset()}"
+    yield f"{rgb(255, 0, 128)}║{' ' * (width-2)}║{reset()}"
+    yield f"{rgb(255, 0, 128)}╠{'═' * (width-2)}╣{reset()}"
+    yield f"{rgb(255, 0, 128)}║{reset()} {fg(51)}User:   {reset()}admin          {rgb(255, 0, 128)}║{reset()}"
+    yield f"{rgb(255, 0, 128)}║{reset()} {fg(51)}Status: {fg(46)}● ONLINE{reset()}      {rgb(255, 0, 128)}║{reset()}"
+    yield f"{rgb(255, 0, 128)}║{reset()} {fg(51)}Uptime: {reset()}0d 00:00:01    {rgb(255, 0, 128)}║{reset()}"
+    yield f"{rgb(255, 0, 128)}╚{'═' * (width-2)}╝{reset()}"
+    time.sleep(1)
+    yield clear()
+
+def phase_ember_snow(rows, width):
+    """Rising embers and falling snowflakes"""
+    embers = [{'x': random.randint(0, width), 'y': random.randint(rows, rows*2), 'phase': random.random()} for _ in range(20)]
+    snow = [{'x': random.randint(0, width), 'y': random.randint(-20, 0), 'speed': random.uniform(0.5, 1.5)} for _ in range(15)]
+    
+    ember_chars = "•'*·"
+    snow_chars = "❄❅❆✻"
+    
+    for row in range(rows):
+        grid = [[' ' for _ in range(width)] for _ in range(5)]  # 5-row buffer
+        occupied = set()
+        
+        # Update embers (rising)
+        for e in embers:
+            e['y'] -= 0.8
+            e['x'] += math.sin(row * 0.1 + e['phase'] * 10) * 0.3
+            if e['y'] < 0:
+                e['y'] = rows + random.randint(0, 10)
+                e['x'] = random.randint(0, width-1)
+            
+            gx, gy = int(e['x']), int(rows - e['y'])
+            if 0 <= gx < width and 0 <= gy < 5:
+                grid[gy][gx] = (random.choice(ember_chars), 'ember')
+                occupied.add((gx, gy))
+        
+        # Update snow (falling)
+        for s in snow:
+            s['y'] += s['speed']
+            s['x'] += math.sin(row * 0.05) * 0.2
+            if s['y'] > rows:
+                s['y'] = -5
+                s['x'] = random.randint(0, width-1)
+            
+            gx, gy = int(s['x']), int(s['y'] / rows * 5)
+            if 0 <= gx < width and 0 <= gy < 5:
+                if (gx, gy) in occupied:
+                    # Collision = steam
+                    grid[gy][gx] = ('~', 'steam')
+                else:
+                    grid[gy][gx] = (random.choice(snow_chars), 'snow')
+        
+        # Render row
+        line_parts = []
+        for gy in range(5):
+            for gx in range(width):
+                cell = grid[gy][gx]
+                if cell == ' ':
+                    line_parts.append(' ')
+                elif cell[1] == 'ember':
+                    # Ember gradient: yellow -> orange -> red -> dim
+                    progress = 1 - (gy / 5)
+                    r = int(255 * progress + 64 * (1 - progress))
+                    g = int(200 * progress)
+                    line_parts.append(rgb(r, g, 0) + cell[0] + reset())
+                elif cell[1] == 'snow':
+                    line_parts.append(rgb(200, 220, 255) + cell[0] + reset())
+                else:  # steam
+                    line_parts.append(rgb(180, 180, 180) + cell[0] + reset())
+        
+        yield "".join(line_parts[:width])
+        time.sleep(0.03)
+
+def phase_crystal(rows, width):
+    """Growing frost-like crystal structures"""
+    # Track crystal branches: (x, y, direction, color, alive)
+    crystals = []
+    colors = [(0, 255, 255), (255, 0, 255), (100, 200, 255), (200, 100, 255)]
+    grid = [[' ' for _ in range(width)] for _ in range(20)]
+    
+    # Seed crystals
+    for _ in range(3):
+        crystals.append({
+            'x': random.randint(10, width-10),
+            'y': 0,
+            'dx': random.choice([-1, 0, 1]),
+            'dy': 1,
+            'color': random.choice(colors),
+            'age': 0
+        })
+    
+    chars = {'/': '╱', '\\': '╲', '-': '─', '|': '│'}
+    
+    for row in range(rows):
+        new_crystals = []
+        
+        for c in crystals:
+            c['age'] += 1
+            x, y = int(c['x']), int(c['y'])
+            
+            if 0 <= x < width and 0 <= y < 20:
+                # Fade old crystals
+                age_factor = max(0, 1 - c['age'] / 50)
+                r, g, b = c['color']
+                r, g, b = int(r * age_factor), int(g * age_factor), int(b * age_factor)
+                
+                if age_factor > 0.2:
+                    if c['dx'] == 0:
+                        ch = '|'
+                    elif c['dy'] == 0:
+                        ch = '-'
+                    elif c['dx'] == c['dy']:
+                        ch = '\\'
+                    else:
+                        ch = '/'
+                    
+                    grid[y][x] = (chars.get(ch, ch), (r, g, b))
+                    
+                    # Grow
+                    c['x'] += c['dx'] * 0.5
+                    c['y'] += c['dy'] * 0.5
+                    
+                    # Random branching
+                    if random.random() < 0.15 and c['age'] < 30:
+                        new_crystals.append({
+                            'x': c['x'],
+                            'y': c['y'],
+                            'dx': c['dx'] + random.choice([-1, 1]),
+                            'dy': c['dy'],
+                            'color': c['color'],
+                            'age': 0
+                        })
+                
+                # Keep alive if still growing
+                if c['age'] < 50 and 0 <= int(c['y']) < 20:
+                    new_crystals.append(c)
+        
+        crystals = new_crystals
+        
+        # Add new seeds occasionally
+        if random.random() < 0.1:
+            crystals.append({
+                'x': random.randint(5, width-5),
+                'y': 0,
+                'dx': random.choice([-1, 0, 1]),
+                'dy': 1,
+                'color': random.choice(colors),
+                'age': 0
+            })
+        
+        # Render
+        line_parts = []
+        for y in range(20):
+            for x in range(width):
+                cell = grid[y][x]
+                if cell == ' ':
+                    line_parts.append(' ')
+                else:
+                    ch, (r, g, b) = cell
+                    line_parts.append(rgb(r, g, b) + ch + reset())
+        
+        yield "".join(line_parts[:width])
+        time.sleep(0.04)
+
+def phase_maze(rows, width):
+    """10 PRINT maze with rainbow coloring"""
+    chars = ['/\\', '╱╲']
+    hue_offset = 0
+    for row in range(rows):
+        line_parts = []
+        for x in range(width):
+            hue = (x * 5 + hue_offset) % 360
+            r, g, b = hsl_to_rgb(hue, 0.8, 0.6)
+            ch = random.choice(['╱', '╲'])
+            line_parts.append(rgb(r, g, b) + ch + reset())
+        yield "".join(line_parts)
+        hue_offset = (hue_offset + 10) % 360
+        time.sleep(0.02)
+
+# Registry
+EFFECTS = {
+    'rain': phase_rain,
+    'matrix': phase_matrix,
+    'gradient': phase_gradient,
+    'waterfall': phase_waterfall,
+    'aurora': phase_aurora,
+    'cherry-blossom': phase_cherry_blossom,
+    'sierpinski': phase_sierpinski,
+    'spectrum': phase_spectrum,
+    'cyberdeck': phase_cyberdeck,
+    'ember-snow': phase_ember_snow,
+    'crystal': phase_crystal,
+    'maze': phase_maze,
+}
+
+def main():
+    width = min(80, os.get_terminal_size().columns if sys.stdout.isatty() else 80)
+    effect_name = sys.argv[1] if len(sys.argv) > 1 else None
+    
+    if effect_name and effect_name not in EFFECTS:
+        print(f"Unknown effect: {effect_name}", file=sys.stderr)
+        print(f"Available: {', '.join(EFFECTS.keys())}", file=sys.stderr)
+        sys.exit(1)
+    
+    if effect_name:
+        # Run single effect forever
+        effect = EFFECTS[effect_name]
+        while True:
+            for line in effect(100, width):
+                print(line)
+                sys.stdout.flush()
+    else:
+        # Cycle through all effects (~2 seconds each)
+        print(banner("~ slit test data ~", 51))
+        time.sleep(0.5)
+        
+        for name, effect in EFFECTS.items():
             print(f"\n{fg(255)}── {name} {'─' * (width - len(name) - 5)}{reset()}")
             time.sleep(0.2)
-            rows = random.randint(30, 80)
-            for line in gen(rows):
+            
+            # Approx 40-60 rows for ~2 seconds depending on effect speed
+            rows = random.randint(40, 60)
+            for line in effect(rows, width):
                 print(line)
                 sys.stdout.flush()
             time.sleep(0.3)
