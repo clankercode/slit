@@ -1,6 +1,4 @@
 ---
-claimed_at: "2026-04-06T12:23:05Z"
-claimed_by: cli-user
 completed_at: null
 complexity: medium
 depends_on: []
@@ -8,7 +6,7 @@ estimate_hours: 1
 id: B001
 priority: high
 started_at: "2026-04-06T12:23:05Z"
-status: in_progress
+status: pending
 tags: []
 title: Record a video/GIF of slit in action for the README
 ---
