@@ -96,21 +96,59 @@ Run via `go test -bench=. -benchmem`:
 - `gofmt -d .` — no diffs
 - No dead code or unused imports found
 
+## Maze Bug Fixes (2026-04-06)
+
+### Bug #1: Removed stdout echo in stdin-reader goroutine
+- **File:** `go/main.go:80`
+- Removed `os.Stdout.WriteString(line + "\n")` which echoed raw ANSI lines to stdout, interleaving with bubbletea's stderr TUI rendering
+
+### Bug #2: Fixed `padRight` for ANSI-colored content
+- **File:** `go/layouts.go:35-41`
+- Replaced raw `len(runes)` with `VisibleWidth()` for measuring and `TrimLineANSI()` for ANSI-aware truncation
+- Box/rounded layouts now correctly display full ANSI-colored content
+
+### Bug #3: Fixed `WrapLineANSI` reset detection and phantom lines
+- **File:** `go/render.go`
+- Changed reset detection from `len(seqRunes) == 3` to `len(seqRunes) == 4` to correctly detect `\x1b[0m`
+- Moved wrap boundary check to only trigger on visible characters (not ANSI codes), preventing phantom empty lines at exact-width wrap boundaries
+
+### Bug #4: Fixed `TrimLineANSI` dangling ANSI before truncation char
+- **File:** `go/render.go`
+- Added trailing ANSI sequence stripping before appending the truncation character
+- Validates that stripped sequences contain only digit/semicolon parameter characters to avoid false positives
+
+### Bug #5: Wide character support via go-runewidth
+- **File:** `go/render.go`
+- Added `github.com/mattn/go-runewidth` as direct dependency
+- `VisibleWidth()` now uses `runewidth.StringWidth()` instead of `utf8.RuneCountInString()`
+- `TrimLineANSI` and `WrapLineANSI` use `runewidth.RuneWidth()` per visible character
+- CJK characters (width=2) are correctly accounted for in all width calculations
+- Maze characters `╱`/`╲` correctly counted as width=1 on Western terminals
+
+### New Regression Tests (`go/render_test.go`) — 12 tests
+- `TestBug2_padRightAnsiContent` / `TestBug2_padRightAnsiTruncation`
+- `TestBug3_WrapLineANSI_resetDetection` / `TestBug3_WrapLineANSI_noPhantomLine` / `TestBug3_WrapLineANSI_noPhantomLineMultipleWidths` / `TestBug3_WrapLineANSI_width79`
+- `TestBug4_TrimLineANSI_noDanglingAnsi`
+- `TestBug5_VisibleWidth_wideChar` / `TestBug5_VisibleWidth_mixedWidth` / `TestBug5_VisibleWidth_mazeChar` / `TestBug5_TrimLineANSI_wideChar` / `TestBug5_WrapLineANSI_wideChar`
+
+### Updated Tests
+- `TestVisibleWidth_unicode`: Updated expected value from 8 to 10 (correct CJK width with runewidth)
+
 ## Test Summary
 
 | Category | Count |
 |----------|-------|
 | Go unit tests (buffer) | 15 |
-| Go unit tests (render + maze) | 23 |
+| Go unit tests (render + maze) | 35 |
 | Go unit tests (config) | 8 |
 | Go unit tests (layouts) | 13 |
 | Go unit tests (spinner) | 13 |
-| **Go unit total** | **72** |
+| **Go unit total** | **84** |
 | Integration tests (existing) | 84 |
 | Integration tests (new) | 24 |
 | **Integration total** | **108** |
 | Go benchmarks | 21 |
-| **Grand total** | **201** |
+| **Grand total** | **213** |
 
 ## Behavior Clarifications for Rust/C Implementations
 

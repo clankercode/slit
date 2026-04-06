@@ -3,6 +3,8 @@ package main
 import (
 	"regexp"
 	"unicode/utf8"
+
+	"github.com/mattn/go-runewidth"
 )
 
 var ansiCSI = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)
@@ -44,14 +46,14 @@ func StripANSI(s string) string {
 }
 
 func VisibleWidth(s string) int {
-	return utf8.RuneCountInString(StripANSI(s))
+	return runewidth.StringWidth(StripANSI(s))
 }
 
 func TrimLineANSI(line string, width int, truncChar string) string {
 	if VisibleWidth(line) <= width {
 		return line
 	}
-	targetVisible := width - utf8.RuneCountInString(truncChar)
+	targetVisible := width - runewidth.StringWidth(truncChar)
 
 	visible := 0
 	var resultRunes []rune
@@ -99,11 +101,50 @@ func TrimLineANSI(line string, width int, truncChar string) string {
 
 		if visible < targetVisible {
 			resultRunes = append(resultRunes, runes[i])
-			visible++
+			visible += runewidth.RuneWidth(runes[i])
 			i++
 		} else {
 			break
 		}
+	}
+
+	for {
+		n := len(resultRunes)
+		if n == 0 {
+			break
+		}
+		last := resultRunes[n-1]
+		isTerm := (last >= 'A' && last <= 'Z') || (last >= 'a' && last <= 'z') || last == '\x07'
+		if !isTerm {
+			break
+		}
+		j := n - 1
+		for j >= 0 && resultRunes[j] != '\x1b' {
+			j--
+		}
+		if j < 0 {
+			break
+		}
+		seq := resultRunes[j:n]
+		valid := false
+		if len(seq) >= 3 && seq[1] == '[' {
+			allParams := true
+			for _, r := range seq[2 : len(seq)-1] {
+				if !((r >= '0' && r <= '9') || r == ';') {
+					allParams = false
+					break
+				}
+			}
+			if allParams {
+				valid = true
+			}
+		} else if len(seq) >= 3 && seq[1] == ']' && last == '\x07' {
+			valid = true
+		}
+		if !valid {
+			break
+		}
+		resultRunes = resultRunes[:j]
 	}
 
 	return string(resultRunes) + truncChar
@@ -126,21 +167,6 @@ func WrapLineANSI(line string, width int) []string {
 	i := 0
 
 	for i < len(runes) {
-		// Check if we need to wrap before processing this character
-		if visible >= width {
-			// Don't add pending ANSI to current line - carry it forward
-			if len(activeSGR) > 0 {
-				currentLine = append(currentLine, []rune("\x1b[0m")...)
-			}
-			result = append(result, string(currentLine))
-			currentLine = []rune{}
-			if len(activeSGR) > 0 {
-				currentLine = append(currentLine, activeSGR...)
-			}
-			// pendingANSI is carried forward but not added yet
-			visible = 0
-		}
-
 		if runes[i] == '\x1b' {
 			var seqRunes []rune
 			seqRunes = append(seqRunes, runes[i])
@@ -152,7 +178,7 @@ func WrapLineANSI(line string, width int) []string {
 					seqRunes = append(seqRunes, runes[i])
 					if (runes[i] >= 'A' && runes[i] <= 'Z') || (runes[i] >= 'a' && runes[i] <= 'z') {
 						if runes[i] == 'm' {
-							if len(seqRunes) == 3 && seqRunes[2] == '0' {
+							if len(seqRunes) == 4 && seqRunes[2] == '0' {
 								activeSGR = nil
 							} else {
 								activeSGR = seqRunes
@@ -184,13 +210,24 @@ func WrapLineANSI(line string, width int) []string {
 			continue
 		}
 
-		// This is a visible character - add pending ANSI first
+		if visible >= width {
+			if len(activeSGR) > 0 {
+				currentLine = append(currentLine, []rune("\x1b[0m")...)
+			}
+			result = append(result, string(currentLine))
+			currentLine = []rune{}
+			if len(activeSGR) > 0 {
+				currentLine = append(currentLine, activeSGR...)
+			}
+			visible = 0
+		}
+
 		for _, seq := range pendingANSI {
 			currentLine = append(currentLine, seq...)
 		}
 		pendingANSI = nil
 		currentLine = append(currentLine, runes[i])
-		visible++
+		visible += runewidth.RuneWidth(runes[i])
 		i++
 	}
 

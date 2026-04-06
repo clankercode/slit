@@ -33,11 +33,11 @@ func GetLayout(name string) Layout {
 }
 
 func padRight(s string, width int) string {
-	runes := []rune(s)
-	if len(runes) > width {
-		return string(runes[:width])
+	vis := VisibleWidth(s)
+	if vis > width {
+		return TrimLineANSI(s, width, "")
 	}
-	return s + strings.Repeat(" ", width-len(runes))
+	return s + strings.Repeat(" ", width-vis)
 }
 
 func RenderLayout(layout Layout, title string, content string, status string, width int) string {

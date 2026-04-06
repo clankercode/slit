@@ -221,8 +221,8 @@ func TestVisibleWidth_plain(t *testing.T) {
 
 func TestVisibleWidth_unicode(t *testing.T) {
 	got := VisibleWidth("hello 世界")
-	if got != 8 {
-		t.Errorf("VisibleWidth('hello 世界') = %d, want 8", got)
+	if got != 10 {
+		t.Errorf("VisibleWidth('hello 世界') = %d, want 10", got)
 	}
 }
 
@@ -267,5 +267,132 @@ func TestWrapLineANSI_multipleColors(t *testing.T) {
 	}
 	if len(got) < 2 {
 		t.Errorf("expected multiple wrapped lines, got %d", len(got))
+	}
+}
+
+func TestBug2_padRightAnsiContent(t *testing.T) {
+	line := makeMazeLine(76)
+	padded := padRight(line, 76)
+	if VisibleWidth(padded) != 76 {
+		t.Errorf("padRight visible width = %d, want 76", VisibleWidth(padded))
+	}
+	stripped := StripANSI(padded)
+	if len([]rune(stripped)) != 76 {
+		t.Errorf("padRight stripped rune count = %d, want 76", len([]rune(stripped)))
+	}
+}
+
+func TestBug2_padRightAnsiTruncation(t *testing.T) {
+	line := makeMazeLine(80)
+	padded := padRight(line, 40)
+	if VisibleWidth(padded) > 40 {
+		t.Errorf("padRight visible width = %d, want <= 40", VisibleWidth(padded))
+	}
+}
+
+func TestBug3_WrapLineANSI_resetDetection(t *testing.T) {
+	input := "\x1b[31mhello\x1b[0m"
+	got := WrapLineANSI(input, 5)
+	if len(got) != 1 {
+		t.Errorf("WrapLineANSI exact width should produce 1 line, got %d", len(got))
+	}
+	if VisibleWidth(got[0]) != 5 {
+		t.Errorf("WrapLineANSI line visible width = %d, want 5", VisibleWidth(got[0]))
+	}
+}
+
+func TestBug3_WrapLineANSI_noPhantomLine(t *testing.T) {
+	line := makeMazeLine(80)
+	got := WrapLineANSI(line, 40)
+	if len(got) != 2 {
+		t.Errorf("WrapLineANSI maze80 at width 40 should produce 2 lines, got %d", len(got))
+	}
+	for i, l := range got {
+		vw := VisibleWidth(l)
+		if vw != 40 {
+			t.Errorf("WrapLineANSI line[%d] visible width = %d, want 40; stripped=%q", i, vw, StripANSI(l))
+		}
+	}
+}
+
+func TestBug3_WrapLineANSI_noPhantomLineMultipleWidths(t *testing.T) {
+	line := makeMazeLine(80)
+	for _, w := range []int{10, 20, 40, 80} {
+		got := WrapLineANSI(line, w)
+		expected := 80 / w
+		if len(got) != expected {
+			t.Errorf("WrapLineANSI maze80 at width %d: got %d lines, want %d", w, len(got), expected)
+		}
+	}
+}
+
+func TestBug3_WrapLineANSI_width79(t *testing.T) {
+	line := makeMazeLine(80)
+	got := WrapLineANSI(line, 79)
+	if len(got) != 2 {
+		t.Errorf("WrapLineANSI maze80 at width 79 should produce 2 lines, got %d", len(got))
+	}
+	if VisibleWidth(got[0]) != 79 {
+		t.Errorf("first line visible width = %d, want 79", VisibleWidth(got[0]))
+	}
+	if VisibleWidth(got[1]) != 1 {
+		t.Errorf("second line visible width = %d, want 1", VisibleWidth(got[1]))
+	}
+}
+
+func TestBug4_TrimLineANSI_noDanglingAnsi(t *testing.T) {
+	line := makeMazeLine(80)
+	got := TrimLineANSI(line, 5, "…")
+	if VisibleWidth(got) != 5 {
+		t.Errorf("TrimLineANSI visible width = %d, want 5; got %q", VisibleWidth(got), got)
+	}
+	lastRune := []rune(StripANSI(got))
+	if len(lastRune) > 0 && lastRune[len(lastRune)-1] != '…' {
+		t.Errorf("TrimLineANSI should end with truncation char, got %q", got)
+	}
+}
+
+func TestBug5_VisibleWidth_wideChar(t *testing.T) {
+	got := VisibleWidth("你好")
+	if got != 4 {
+		t.Errorf("VisibleWidth('你好') = %d, want 4 (2 wide chars)", got)
+	}
+}
+
+func TestBug5_VisibleWidth_mixedWidth(t *testing.T) {
+	got := VisibleWidth("a你b好c")
+	if got != 7 {
+		t.Errorf("VisibleWidth('a你b好c') = %d, want 7", got)
+	}
+}
+
+func TestBug5_VisibleWidth_mazeChar(t *testing.T) {
+	got := VisibleWidth("╱╲")
+	if got != 2 {
+		t.Errorf("VisibleWidth('╱╲') = %d, want 2 (ambiguous=1 on Western)", got)
+	}
+}
+
+func TestBug5_TrimLineANSI_wideChar(t *testing.T) {
+	got := TrimLineANSI("a你b好cdef", 5, "…")
+	vw := VisibleWidth(got)
+	if vw != 5 {
+		t.Errorf("TrimLineANSI wide chars visible width = %d, want 5; got %q", vw, got)
+	}
+}
+
+func TestBug5_WrapLineANSI_wideChar(t *testing.T) {
+	input := "a你b好cdef"
+	totalExpected := VisibleWidth(input)
+	got := WrapLineANSI(input, 5)
+	if len(got) < 2 {
+		t.Fatalf("WrapLineANSI wide chars: expected 2+ lines, got %d", len(got))
+	}
+	totalVis := 0
+	for _, l := range got {
+		totalVis += VisibleWidth(l)
+	}
+	if totalVis != totalExpected {
+		t.Errorf("WrapLineANSI total visible width = %d, want %d", totalVis, totalExpected)
 	}
 }

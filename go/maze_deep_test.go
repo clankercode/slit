@@ -68,7 +68,6 @@ func TestTrimLineANSI_maze_danglingColor(t *testing.T) {
 }
 
 func TestWrapLineANSI_maze_phantomLine(t *testing.T) {
-	t.Skip("known bug: WrapLineANSI produces phantom line with leftover ANSI bytes — see GO_CHANGES.md")
 	line := makeMazeLine(80)
 	wrapped := WrapLineANSI(line, 40)
 	t.Logf("WrapLineANSI(80chars, 40) produced %d lines", len(wrapped))
@@ -79,6 +78,9 @@ func TestWrapLineANSI_maze_phantomLine(t *testing.T) {
 			t.Errorf("Phantom line %d with 0 visible chars but %d bytes of content", i, len(w))
 			t.Logf("  Phantom content: %q", w)
 		}
+	}
+	if len(wrapped) != 2 {
+		t.Errorf("expected 2 wrapped lines, got %d", len(wrapped))
 	}
 }
 

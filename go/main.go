@@ -78,7 +78,6 @@ var rootCmd = &cobra.Command{
 			scanner := bufio.NewScanner(os.Stdin)
 			for scanner.Scan() {
 				line := scanner.Text()
-				os.Stdout.WriteString(line + "\n")
 				p.Send(lineMsg(line))
 			}
 			p.Send(eofMsg{})
