@@ -11,7 +11,7 @@
 #include <time.h>
 #include <signal.h>
 
-#define VERSION "0.2.1"
+#define VERSION "0.2.2"
 #define DEFAULT_MAX_LINES 50000
 #define DEFAULT_LINES 0
 #define DEFAULT_LAYOUT LAYOUT_MINIMAL
