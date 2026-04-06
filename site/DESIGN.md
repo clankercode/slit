@@ -86,7 +86,7 @@ Initially transparent. Opaque + backdrop-blur after scroll.
 ### Intro (`#intro`)
 - Eyebrow: `what is slit`
 - H2: `Your terminal output / is going nowhere fast. / Now it is.` — "Now it is." in accent cyan.
-- Lead paragraph explaining the core mechanic: fixed-height viewport, live, 30fps, pipe anything, press `q` to quit.
+- Lead paragraph explaining the core mechanic: fixed-height viewport, live, up to 100fps, pipe anything, press `q` to quit.
 
 ### Features (`#features`)
 - Eyebrow: `features`

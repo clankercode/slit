@@ -16,7 +16,7 @@ Unlike `tail -f` (file only) or `less` (pager, not live), `slit` is purpose-buil
 
 ## Features
 
-- **Live rendering** at ~30fps with render debouncing
+- **Live rendering** at up to ~100fps with render debouncing
 - **6 layouts**: minimal, box, rounded, compact, quote, none
 - **Line numbers**, **timestamps**, **wrap mode**
 - **ANSI color passthrough** (`--color=auto|always|never`)
