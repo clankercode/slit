@@ -67,5 +67,8 @@ install-c: build-c
     mkdir -p ~/.local/bin
     cp c/slit ~/.local/bin/slit
 
+benchmark: build-all
+    ./scripts/benchmark --ansi
+
 man: build
     ./go/slit --generate-man > slit.1

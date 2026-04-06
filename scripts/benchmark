@@ -1,0 +1,330 @@
+#!/usr/bin/env python3
+"""Benchmark slit implementations: throughput, CPU, and memory vs line count.
+
+Runs each implementation in a PTY (reusing pty_runner infrastructure), feeding
+generated input at various line counts. Tracks wall time, CPU time, and peak RSS.
+
+Usage:
+    ./scripts/benchmark [--impls go,rust,c] [--sizes 1k,10k,100k,1m] [--ansi] [--iterations 3]
+"""
+
+import argparse
+import os
+import random
+import resource
+import string
+import struct
+import sys
+import termios
+import time
+import fcntl
+import select
+import signal
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tests", "cross-impl"))
+from pty_runner import BINARIES, DEFAULT_ROWS, DEFAULT_COLS
+
+LINE_COUNTS = {
+    "1k": 1_000,
+    "10k": 10_000,
+    "100k": 100_000,
+    "1m": 1_000_000,
+}
+
+SAMPLE_LINE = "2026-04-06T12:34:56 INFO  [main] request_id=abc123 method=GET path=/api/v1/users/42 status=200 latency=3.45ms user_agent=Mozilla/5.0"
+
+ANSI_COLORS = [
+    "\033[31m", "\033[32m", "\033[33m", "\033[34m", "\033[35m", "\033[36m",
+    "\033[91m", "\033[92m", "\033[93m", "\033[94m", "\033[95m", "\033[96m",
+]
+RESET = "\033[0m"
+
+
+def generate_plain(count):
+    parts = []
+    for i in range(count):
+        jitter = random.choice(string.ascii_lowercase) + random.choice(string.digits)
+        parts.append(f"{SAMPLE_LINE} jitter={jitter} seq={i}\n")
+    return "".join(parts).encode()
+
+
+def generate_ansi(count):
+    parts = []
+    for i in range(count):
+        c = random.choice(ANSI_COLORS)
+        jitter = random.choice(string.ascii_lowercase) + random.choice(string.digits)
+        parts.append(f"{c}{SAMPLE_LINE} jitter={jitter} seq={i}{RESET}\n")
+    return "".join(parts).encode()
+
+
+def run_benchmark(binary, input_data, rows=DEFAULT_ROWS, cols=DEFAULT_COLS):
+    master_fd, slave_fd = os.openpty()
+    winsize = struct.pack("HHHH", rows, cols, 0, 0)
+    fcntl.ioctl(slave_fd, termios.TIOCSWINSZ, winsize)
+    slave_name = os.ttyname(slave_fd)
+    data_r, data_w = os.pipe()
+
+    env = os.environ.copy()
+    env["SLIT_FORCE_RENDER"] = "1"
+    env["TERM"] = "xterm-256color"
+
+    pid = os.fork()
+    if pid == 0:
+        os.close(master_fd)
+        os.close(data_w)
+        os.setsid()
+        ctty_fd = os.open(slave_name, os.O_RDWR)
+        try:
+            fcntl.ioctl(ctty_fd, termios.TIOCSCTTY, 0)
+        except OSError:
+            pass
+        os.dup2(data_r, 0)
+        os.dup2(ctty_fd, 1)
+        os.dup2(ctty_fd, 2)
+        if ctty_fd > 2:
+            os.close(ctty_fd)
+        os.close(slave_fd)
+        if data_r > 2:
+            os.close(data_r)
+        try:
+            os.execle(str(binary), "slit", env)
+        except OSError:
+            os._exit(127)
+
+    os.close(slave_fd)
+    os.close(data_r)
+
+    peak_rss = 0
+
+    try:
+        # wait for init, drain PTY, respond to DSR
+        init_deadline = time.monotonic() + 0.5
+        while time.monotonic() < init_deadline:
+            r, _, _ = select.select([master_fd], [], [], 0.05)
+            if r:
+                try:
+                    buf = os.read(master_fd, 4096)
+                    if b"\x1b[6n" in buf:
+                        os.write(master_fd, b"\x1b[1;1R")
+                except OSError:
+                    break
+
+        t_wall_start = time.monotonic()
+        written = 0
+        view = memoryview(input_data)
+        child_died = False
+        pty_buffer = b""
+        while written < len(input_data):
+            # check child is still alive
+            try:
+                pid_res, status = os.waitpid(pid, os.WNOHANG)
+                if pid_res != 0:
+                    child_died = True
+                    break
+            except ChildProcessError:
+                child_died = True
+                break
+
+            # drain PTY output and respond to DSR queries
+            r, _, _ = select.select([master_fd], [], [], 0.0)
+            if r:
+                try:
+                    pty_buffer += os.read(master_fd, 4096)
+                    if b"\x1b[6n" in pty_buffer:
+                        pty_buffer = pty_buffer.replace(b"\x1b[6n", b"")
+                        os.write(master_fd, b"\x1b[1;1R")
+                except OSError:
+                    pass
+
+            r, w, _ = select.select([], [data_w], [], 0.5)
+            if not w:
+                break
+            chunk = view[written:written + 65536]
+            try:
+                n = os.write(data_w, chunk)
+            except OSError:
+                break
+            written += n
+            try:
+                with open(f"/proc/{pid}/status") as f:
+                    for line in f:
+                        if line.startswith("VmRSS:"):
+                            rss_kb = int(line.split()[1])
+                            peak_rss = max(peak_rss, rss_kb)
+                            break
+            except (FileNotFoundError, ValueError, ProcessLookupError):
+                pass
+
+        os.close(data_w)
+
+        # drain PTY and settle
+        settle_deadline = time.monotonic() + 0.5
+        while time.monotonic() < settle_deadline:
+            try:
+                pid_res, status = os.waitpid(pid, os.WNOHANG)
+                if pid_res != 0:
+                    break
+            except ChildProcessError:
+                break
+            r, _, _ = select.select([master_fd], [], [], 0.05)
+            if r:
+                try:
+                    buf = os.read(master_fd, 4096)
+                    if b"\x1b[6n" in buf:
+                        os.write(master_fd, b"\x1b[1;1R")
+                except OSError:
+                    break
+            # poll RSS
+            try:
+                with open(f"/proc/{pid}/status") as f:
+                    for line in f:
+                        if line.startswith("VmRSS:"):
+                            rss_kb = int(line.split()[1])
+                            peak_rss = max(peak_rss, rss_kb)
+                            break
+            except (FileNotFoundError, ValueError, ProcessLookupError):
+                pass
+
+        t_wall = time.monotonic() - t_wall_start
+
+        # quit
+        try:
+            os.write(master_fd, b"q")
+        except OSError:
+            pass
+
+        exit_deadline = time.monotonic() + 2.0
+        while time.monotonic() < exit_deadline:
+            try:
+                pid_res, status = os.waitpid(pid, os.WNOHANG)
+                if pid_res != 0:
+                    break
+            except ChildProcessError:
+                status = 0
+                break
+            try:
+                r, _, _ = select.select([master_fd], [], [], 0.1)
+                if r:
+                    os.read(master_fd, 4096)
+            except OSError:
+                break
+        else:
+            try:
+                os.kill(pid, signal.SIGKILL)
+                os.waitpid(pid, 0)
+            except OSError:
+                pass
+            status = 0
+
+    except Exception:
+        try:
+            os.kill(pid, signal.SIGKILL)
+            os.waitpid(pid, 0)
+        except OSError:
+            pass
+        raise
+    finally:
+        try:
+            os.close(master_fd)
+        except OSError:
+            pass
+
+    return {
+        "wall_s": t_wall,
+        "peak_rss_kb": peak_rss,
+    }
+
+
+def fmt_bytes(n):
+    if n < 1024:
+        return f"{n}B"
+    if n < 1024 * 1024:
+        return f"{n/1024:.1f}KB"
+    if n < 1024 * 1024 * 1024:
+        return f"{n/1024/1024:.1f}MB"
+    return f"{n/1024/1024/1024:.1f}GB"
+
+
+def fmt_kb(kb):
+    if kb < 1024:
+        return f"{kb}KB"
+    return f"{kb/1024:.1f}MB"
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Benchmark slit implementations")
+    parser.add_argument("--impls", default="go,rust,c", help="Comma-separated impls")
+    parser.add_argument("--sizes", default="1k,10k,100k,1m", help="Comma-separated sizes")
+    parser.add_argument("--iterations", type=int, default=2, help="Runs per config (median reported)")
+    parser.add_argument("--ansi", action="store_true", help="Also run with ANSI-colored input")
+    args = parser.parse_args()
+
+    impl_names = [n.strip() for n in args.impls.split(",")]
+    size_keys = [s.strip() for n in args.sizes.split(",") for s in [n]]
+
+    missing = [n for n in impl_names if n not in BINARIES]
+    if missing:
+        print(f"Unknown impls: {missing}", file=sys.stderr)
+        sys.exit(1)
+
+    impls = [(n, BINARIES[n]) for n in impl_names]
+    missing_bins = [(n, b) for n, b in impls if not b.exists()]
+    if missing_bins:
+        for n, b in missing_bins:
+            print(f"Binary not found: {b}", file=sys.stderr)
+        sys.exit(1)
+
+    modes = [("plain", generate_plain)]
+    if args.ansi:
+        modes.append(("ansi", generate_ansi))
+
+    # header
+    print(f"\n{'='*80}")
+    print(f"  slit benchmark  |  {args.iterations} iteration{'s' if args.iterations != 1 else ''} (median)")
+    print(f"{'='*80}\n")
+
+    for mode_name, gen_fn in modes:
+        print(f"  [{mode_name} input]")
+        print()
+
+        header = (
+            f"  {'Impl':<6} {'Lines':>10} {'Input':>10} "
+            f"{'Wall':>8} {'Lines/s':>12} {'MB/s':>8} {'Peak RSS':>10}"
+        )
+        print(header)
+        print(f"  {'-'*6} {'-'*10} {'-'*10} {'-'*8} {'-'*12} {'-'*8} {'-'*10}")
+
+        for size_key in size_keys:
+            count = LINE_COUNTS.get(size_key)
+            if count is None:
+                print(f"  Unknown size: {size_key}", file=sys.stderr)
+                continue
+
+            input_data = gen_fn(count)
+            input_mb = len(input_data) / (1024 * 1024)
+
+            for impl_name, binary in impls:
+                results = []
+                for i in range(args.iterations):
+                    r = run_benchmark(binary, input_data)
+                    results.append(r)
+
+                # take median by wall_s
+                results.sort(key=lambda r: r["wall_s"])
+                med = results[len(results) // 2]
+
+                wall = med["wall_s"]
+                lps = count / wall if wall > 0 else 0
+                mbps = input_mb / wall if wall > 0 else 0
+
+                print(
+                    f"  {impl_name:<6} {count:>10,} {fmt_bytes(len(input_data)):>10} "
+                    f"{wall:>7.2f}s {lps:>11,.0f} {mbps:>7.1f}  {fmt_kb(med['peak_rss_kb']):>10}"
+                )
+            print()
+
+    print(f"{'='*80}\n")
+
+
+if __name__ == "__main__":
+    main()
