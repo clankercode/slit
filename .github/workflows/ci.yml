@@ -2,62 +2,115 @@ name: CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
 
 jobs:
-  build-and-test:
+  go:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.21'
-    
-    - name: Install bats-core
-      run: |
-        git clone https://github.com/bats-core/bats-core.git /tmp/bats-core
-        sudo /tmp/bats-core/install.sh /usr/local
-        bats --version
-    
-    - name: Build Go binary
-      run: |
-        cd go
-        go build -o slit .
-    
-    - name: Run Go unit tests
-      run: |
-        cd go
-        go test -v ./...
-    
-    - name: Run Go vet
-      run: |
-        cd go
-        go vet ./...
-    
-    - name: Check Go formatting
-      run: |
-        cd go
-        if [ -n "$(gofmt -d .)" ]; then
-          echo "Go code is not formatted:"
-          gofmt -d .
-          exit 1
-        fi
-    
-    - name: Run integration tests
-      run: |
-        SLIT_BIN=go/slit bats tests/integration
-    
-    - name: Upload test results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: test-results
-        path: |
-          go/slit
-          test-output/
-        if-no-files-found: ignore
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go/go.mod
+          cache-dependency-path: go/go.sum
+
+      - name: Install bats-core
+        run: |
+          git clone https://github.com/bats-core/bats-core.git /tmp/bats-core
+          sudo /tmp/bats-core/install.sh /usr/local
+          bats --version
+
+      - name: Build Go binary
+        run: go build -o slit .
+        working-directory: go
+
+      - name: Run Go unit tests
+        run: go test -v ./...
+        working-directory: go
+
+      - name: Run Go vet
+        run: go vet ./...
+        working-directory: go
+
+      - name: Check Go formatting
+        run: |
+          if [ -n "$(gofmt -d .)" ]; then
+            echo "Go code is not formatted:"
+            gofmt -d .
+            exit 1
+          fi
+        working-directory: go
+
+      - name: Verify Go man page generation
+        run: ./slit --generate-man | grep '^.TH'
+        working-directory: go
+
+      - name: Run integration tests
+        run: SLIT_BIN=go/slit bats tests/integration
+        working-directory: .
+
+      - name: Upload Go test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: go-test-results
+          path: |
+            go/slit
+            test-output/
+          if-no-files-found: ignore
+
+  c:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install C toolchain
+        run: sudo apt-get update && sudo apt-get install -y build-essential
+
+      - name: Build C binary
+        run: make build
+        working-directory: c
+
+      - name: Run C tests
+        run: make test
+        working-directory: c
+
+      - name: Verify C man page generation
+        run: ./slit --generate-man | grep '^.TH'
+        working-directory: c
+
+  rust:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            rust/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('rust/Cargo.lock') }}
+
+      - name: Build Rust binary
+        run: cargo build --release
+        working-directory: rust
+
+      - name: Run Rust tests
+        run: cargo test --verbose
+        working-directory: rust
+
+      - name: Verify Rust man page generation
+        run: ./target/release/slit --generate-man | grep '^.TH'
+        working-directory: rust
