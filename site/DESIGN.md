@@ -122,12 +122,12 @@ Initially transparent. Opaque + backdrop-blur after scroll.
 
 ### Download CTA
 - Vertical accent line from top edge.
-- `v0.2.2` eyebrow.
+- `v0.2.3` eyebrow.
 - H2: `Get slit.`
 - Three buttons: `all downloads →` (primary, filled cyan), `view source ↗`, `releases ↗`.
 
 ### Footer
-- Left: `slit v0.2.2 — CC0-1.0 license`
+- Left: `slit v0.2.3 — CC0-1.0 license`
 - Right links: github · releases · issues
 
 ---
@@ -140,7 +140,7 @@ Initially transparent. Opaque + backdrop-blur after scroll.
 - Lead paragraph: "Pre-built binaries for Linux x86_64..."
 
 ### Version row
-- Shows `v0.2.2` tag (cyan border), changelog link, "latest release" label.
+- Shows `v0.2.3` tag (cyan border), changelog link, "latest release" label.
 
 ### Platform tabs
 - Three tabs: `Linux x86_64` · `Linux arm64` · `source`

@@ -12,7 +12,7 @@ import (
 	"golang.org/x/term"
 )
 
-var version = "0.2.2"
+var version = "0.2.3"
 
 var (
 	flagLines          int

@@ -64,7 +64,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-assets
-          path: dist/*
+          path: |
+            dist/slit-c-linux-x86_64.tar.gz
+            dist/slit-go-linux-x86_64.tar.gz
+            dist/slit-rust-linux-x86_64.tar.gz
+            dist/slit-docs.tar.gz
+            dist/SHA256SUMS
 
   publish-release:
     runs-on: ubuntu-latest
@@ -80,4 +85,16 @@ jobs:
       - name: Publish GitHub release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create "$GITHUB_REF_NAME" dist/* --generate-notes --verify-tag --repo "$GITHUB_REPOSITORY"
+        run: |
+          files=(
+            dist/slit-c-linux-x86_64.tar.gz
+            dist/slit-go-linux-x86_64.tar.gz
+            dist/slit-rust-linux-x86_64.tar.gz
+            dist/slit-docs.tar.gz
+            dist/SHA256SUMS
+          )
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "${files[@]}" --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$GITHUB_REF_NAME" "${files[@]}" --generate-notes --verify-tag --repo "$GITHUB_REPOSITORY"
+          fi
