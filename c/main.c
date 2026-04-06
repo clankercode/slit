@@ -81,7 +81,7 @@ static void print_version(void) {
 }
 
 static void print_manpage(void) {
-    puts(".TH SLIT 1 \"slit 0.2.0\" \"slit\" \"User Commands\"");
+    printf(".TH SLIT 1 \"slit %s\" \"slit\" \"User Commands\"\n", VERSION);
     puts(".SH NAME");
     puts("slit \\\\- streaming terminal viewer with a fixed-height live pane");
     puts(".SH SYNOPSIS");

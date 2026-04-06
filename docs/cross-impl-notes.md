@@ -59,7 +59,7 @@ All three implementations support the same set of CLI flags:
 | `debug` | false | false | false | yes |
 | `log_file` | (auto) | (auto) | (auto) | yes |
 | `RENDER_INTERVAL_MS` | ~33 (100ms spinner tick) | 33ms tick interval | 33ms poll | yes |
-| `version` | 0.2.0 | 0.2.0 | 0.2.0 | yes |
+| `version` | 0.2.1 | 0.2.1 | 0.2.1 | yes |
 
 All defaults are consistent across implementations.
 
