@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>slit — stream viewer</title>
+  <meta name="description" content="slit is a streaming terminal viewer. pipe anything. see everything.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #060606;
+      --surface:     #0d0d0d;
+      --surface2:    #121212;
+      --border:      #1a1a1a;
+      --border2:     #242424;
+      --text:        #b0b0b0;
+      --dim:         #444;
+      --faint:       #222;
+      --accent:      #00e5ff;
+      --accent-lo:   rgba(0,229,255,0.08);
+      --accent-mid:  rgba(0,229,255,0.18);
+      --stream:      #1c301c;
+      --stream-hi:   #2a4a2a;
+      --font:        'JetBrains Mono', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 14px;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ─── NAV ──────────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 2.5rem;
+      transition: background 0.4s, border-color 0.4s;
+      border-bottom: 1px solid transparent;
+    }
+    nav.opaque {
+      background: rgba(6,6,6,0.92);
+      backdrop-filter: blur(12px);
+      border-color: var(--border);
+    }
+    .nav-logo {
+      font-weight: 800;
+      font-size: 1.05rem;
+      letter-spacing: -0.04em;
+      color: #f0f0f0;
+    }
+    .nav-links {
+      display: flex;
+      gap: 2.5rem;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--dim);
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--accent); }
+
+    /* ─── HERO ─────────────────────────────────────────────── */
+    #hero {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #stream-bg {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    #stream-text {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 1.5rem 3rem;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      color: var(--stream);
+      white-space: pre;
+    }
+
+    /* ─── PANELS ───────────────────────────────────────────── */
+    .panel {
+      position: absolute;
+      background: var(--bg);
+      z-index: 2;
+    }
+    #panel-top    { top: 0; left: 0; right: 0; }
+    #panel-bottom { bottom: 0; left: 0; right: 0; }
+    #panel-left   { left: 0; top: 0; bottom: 0; }
+    #panel-right  { right: 0; top: 0; bottom: 0; }
+
+    /* ─── CLIP CHROME ─────────────────────────────────────── */
+    #clip-chrome {
+      position: absolute;
+      z-index: 4;
+      border: 1px solid var(--accent);
+      opacity: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    #clip-chrome::before {
+      content: '$ tail -f pipeline.log | slit --box';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1.7em;
+      background: var(--accent-lo);
+      border-bottom: 1px solid rgba(0,229,255,0.2);
+      display: flex;
+      align-items: center;
+      padding: 0 0.7em;
+      font-size: 0.72rem;
+      color: rgba(0,229,255,0.5);
+      display: block;
+      line-height: 1.7em;
+    }
+    #chrome-status {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 1.7em;
+      background: var(--accent-lo);
+      border-top: 1px solid rgba(0,229,255,0.25);
+      display: flex;
+      align-items: center;
+      padding: 0 0.7em;
+      gap: 0.8em;
+      font-size: 0.72rem;
+      color: var(--accent);
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .chrome-sep {
+      color: rgba(0,229,255,0.25);
+    }
+    #chrome-keys {
+      margin-left: auto;
+      color: rgba(0,229,255,0.3);
+      font-size: 0.65rem;
+    }
+
+    /* ─── HERO CONTENT ────────────────────────────────────── */
+    #hero-content {
+      position: absolute;
+      top: 50%;
+      left: 0; right: 0;
+      z-index: 6;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(calc(-50% + 28px));
+      pointer-events: none;
+      width: 100%;
+    }
+    #hero-content.visible { pointer-events: auto; }
+
+    #hero-title {
+      font-size: clamp(7rem, 20vw, 18rem);
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      line-height: 0.82;
+      color: #efefef;
+      position: relative;
+      display: inline-block;
+      user-select: none;
+    }
+
+    #slit-cut {
+      position: absolute;
+      left: -8%;
+      right: -8%;
+      top: calc(50% + 2px);
+      height: 2px;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--accent) 12%,
+        var(--accent) 88%,
+        transparent 100%
+      );
+      transform-origin: left center;
+      transform: scaleX(0);
+      opacity: 0;
+    }
+
+    #hero-tagline {
+      font-size: 0.8rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-top: 2.2rem;
+    }
+
+    #hero-install {
+      margin-top: 2.5rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.8em;
+      border: 1px solid var(--border2);
+      background: var(--surface);
+      padding: 0.55em 0.9em 0.55em 1em;
+    }
+    #hero-install code {
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-family: var(--font);
+    }
+    #copy-btn {
+      background: none;
+      border: 1px solid var(--border2);
+      color: var(--dim);
+      font-family: var(--font);
+      font-size: 0.6rem;
+      padding: 0.25em 0.55em;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    #copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+    #copy-btn.copied { color: #00ff88; border-color: #00ff88; }
+
+    #hero-scroll {
+      position: absolute;
+      bottom: 2.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 6;
+      opacity: 0;
+      font-size: 0.65rem;
+      color: var(--dim);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    #hero-scroll .arr {
+      width: 1px;
+      height: 2rem;
+      background: linear-gradient(to bottom, var(--dim), transparent);
+      animation: scroll-pulse 2s ease-in-out infinite;
+    }
+    @keyframes scroll-pulse {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+
+    /* ─── PAGE SECTIONS ───────────────────────────────────── */
+    .section {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 6rem 2rem;
+    }
+
+    .section + .section {
+      border-top: 1px solid var(--border);
+    }
+
+    .eyebrow {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+    }
+
+    h2 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      color: #e0e0e0;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 1.25rem;
+    }
+
+    .lead {
+      font-size: 0.95rem;
+      color: var(--text);
+      max-width: 600px;
+      line-height: 1.7;
+    }
+
+    /* ─── INTRO STATEMENT ─────────────────────────────────── */
+    #intro {
+      padding-top: 8rem;
+    }
+    #intro h2 {
+      font-size: clamp(1.6rem, 3.5vw, 2.8rem);
+      max-width: 700px;
+    }
+    #intro h2 em {
+      font-style: normal;
+      color: var(--accent);
+    }
+
+    /* ─── FEATURES ────────────────────────────────────────── */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      margin-top: 3.5rem;
+      border: 1px solid var(--border);
+    }
+
+    .feature {
+      padding: 2rem;
+      border-right: 1px solid var(--border);
+      position: relative;
+    }
+    .feature:last-child { border-right: none; }
+
+    .feature-number {
+      font-size: 0.6rem;
+      color: var(--faint);
+      letter-spacing: 0.15em;
+      margin-bottom: 1.25rem;
+      display: block;
+    }
+
+    .feature h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #d8d8d8;
+      letter-spacing: -0.01em;
+      margin-bottom: 0.75rem;
+    }
+
+    .feature p {
+      font-size: 0.8rem;
+      color: var(--dim);
+      line-height: 1.65;
+    }
+
+    .feature-accent {
+      display: inline-block;
+      color: var(--accent);
+      font-size: 0.72rem;
+      margin-top: 1rem;
+      letter-spacing: 0.05em;
+    }
+
+    /* ─── IMPLEMENTATIONS ─────────────────────────────────── */
+    .impl-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      margin-top: 3.5rem;
+      border: 1px solid var(--border);
+    }
+
+    .impl-card {
+      padding: 2rem;
+      border-right: 1px solid var(--border);
+      position: relative;
+    }
+    .impl-card:last-child { border-right: none; }
+
+    .impl-lang {
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      margin-bottom: 1.5rem;
+    }
+    .impl-lang.c    { color: #aac8ff; }
+    .impl-lang.rust { color: #ff8c5a; }
+    .impl-lang.go   { color: #79c9e8; }
+
+    .impl-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 0.75rem;
+      border-bottom: 1px solid var(--faint);
+      padding-bottom: 0.4rem;
+    }
+    .stat-row:last-child { border-bottom: none; }
+
+    .stat-label { color: var(--dim); }
+    .stat-value { color: #d0d0d0; font-weight: 700; }
+    .stat-value.best { color: #00ff88; }
+
+    .impl-cta {
+      margin-top: 1.75rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5em;
+      font-size: 0.72rem;
+      color: var(--dim);
+      border: 1px solid var(--border2);
+      padding: 0.4em 0.75em;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .impl-cta:hover { color: var(--accent); border-color: var(--accent); }
+
+    /* ─── BENCH ───────────────────────────────────────────── */
+    .bench-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 3rem;
+      font-size: 0.8rem;
+    }
+
+    .bench-table th {
+      text-align: left;
+      padding: 0.65rem 1rem;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--dim);
+      border-bottom: 1px solid var(--border2);
+    }
+
+    .bench-table td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    .bench-table tr:last-child td { border-bottom: none; }
+
+    .bench-table tr:hover td { background: var(--surface); }
+
+    .lang-badge {
+      font-weight: 700;
+      font-size: 0.9rem;
+      letter-spacing: -0.02em;
+    }
+    .lang-badge.c    { color: #aac8ff; }
+    .lang-badge.rust { color: #ff8c5a; }
+    .lang-badge.go   { color: #79c9e8; }
+
+    .bench-best {
+      color: #00ff88;
+      font-weight: 700;
+    }
+    .bench-note {
+      font-size: 0.65rem;
+      color: var(--faint);
+      margin-top: 0.75rem;
+    }
+
+    /* ─── EXAMPLES ────────────────────────────────────────── */
+    .examples-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      margin-top: 3rem;
+    }
+
+    .example-item {
+      border-left: 1px solid var(--border2);
+      padding-left: 1.5rem;
+    }
+
+    .example-desc {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--dim);
+      margin-bottom: 0.6rem;
+    }
+
+    pre.code-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.82rem;
+      line-height: 1.6;
+    }
+
+    pre.code-block .prompt { color: var(--dim); }
+    pre.code-block .cmd    { color: #e8e8e8; }
+    pre.code-block .flag   { color: var(--accent); }
+    pre.code-block .arg    { color: #aad4ff; }
+    pre.code-block .comment{ color: var(--faint); font-style: italic; }
+
+    /* ─── DOWNLOAD CTA ────────────────────────────────────── */
+    #download-cta {
+      text-align: center;
+      padding: 7rem 2rem;
+      border-top: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    #download-cta::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%; transform: translateX(-50%);
+      width: 1px;
+      height: 4rem;
+      background: linear-gradient(to bottom, transparent, var(--accent));
+    }
+
+    #download-cta h2 {
+      font-size: 2.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    #download-cta .lead {
+      margin: 0 auto 2.5rem;
+      text-align: center;
+      max-width: 500px;
+    }
+
+    .dl-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .dl-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6em;
+      padding: 0.7em 1.4em;
+      font-family: var(--font);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: 1px solid;
+    }
+
+    .dl-btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #000;
+    }
+    .dl-btn.primary:hover {
+      background: #fff;
+      border-color: #fff;
+    }
+
+    .dl-btn.secondary {
+      background: transparent;
+      border-color: var(--border2);
+      color: var(--dim);
+    }
+    .dl-btn.secondary:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ─── FOOTER ──────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem 2.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--faint);
+    }
+
+    footer a:hover { color: var(--accent); }
+
+    .footer-links {
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    /* ─── SCROLL REVEAL ───────────────────────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .reveal.in { opacity: 1; transform: none; }
+    .reveal.delay-1 { transition-delay: 0.1s; }
+    .reveal.delay-2 { transition-delay: 0.2s; }
+    .reveal.delay-3 { transition-delay: 0.3s; }
+
+    @media (max-width: 720px) {
+      .feature-grid, .impl-grid { grid-template-columns: 1fr; }
+      .feature, .impl-card { border-right: none; border-bottom: 1px solid var(--border); }
+      .feature:last-child, .impl-card:last-child { border-bottom: none; }
+      nav { padding: 0.9rem 1.25rem; }
+      .nav-links { gap: 1.25rem; }
+      .nav-links li:nth-child(3), .nav-links li:nth-child(4) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ──────────────────── NAV ──────────────────── -->
+<nav id="nav">
+  <a href="/" class="nav-logo">slit</a>
+  <ul class="nav-links">
+    <li><a href="#features">features</a></li>
+    <li><a href="#implementations">implementations</a></li>
+    <li><a href="#examples">usage</a></li>
+    <li><a href="downloads.html">downloads</a></li>
+    <li><a href="https://github.com/clankercode/slit" target="_blank" rel="noopener">github ↗</a></li>
+  </ul>
+</nav>
+
+<!-- ──────────────────── HERO ─────────────────── -->
+<section id="hero">
+
+  <!-- streaming text background -->
+  <div id="stream-bg">
+    <div id="stream-text"></div>
+  </div>
+
+  <!-- 4 panels that squeeze inward -->
+  <div class="panel" id="panel-top"></div>
+  <div class="panel" id="panel-bottom"></div>
+  <div class="panel" id="panel-left"></div>
+  <div class="panel" id="panel-right"></div>
+
+  <!-- terminal chrome (appears after panels settle) -->
+  <div id="clip-chrome">
+    <div id="chrome-status">
+      <span id="spin-char">⠋</span>
+      <span id="line-ct">0 lines</span>
+      <span class="chrome-sep">│</span>
+      <span id="chrome-rate">0 B/s</span>
+      <span id="chrome-keys">q quit  ^C exit  -b --box  -r --rounded  -c --compact</span>
+    </div>
+  </div>
+
+  <!-- post-animation title -->
+  <div id="hero-content">
+    <h1 id="hero-title">
+      SLIT
+      <div id="slit-cut"></div>
+    </h1>
+    <p id="hero-tagline">stream viewer for the terminal</p>
+    <div id="hero-install">
+      <code id="install-cmd">go install github.com/clankercode/slit/go@latest</code>
+      <button id="copy-btn" onclick="copyInstall()">copy</button>
+    </div>
+  </div>
+
+  <div id="hero-scroll">
+    <span>scroll</span>
+    <div class="arr"></div>
+  </div>
+
+</section>
+
+<!-- ──────────────────── INTRO ────────────────── -->
+<section class="section reveal" id="intro">
+  <div class="eyebrow">what is slit</div>
+  <h2>Your terminal output<br>is going nowhere fast.<br><em>Now it is.</em></h2>
+  <p class="lead" style="margin-top:1.5rem;">
+    slit reads stdin and renders it in a fixed-height viewport, live, at up to 30fps.
+    No more scrollback hunting. No more tail juggling.
+    Pipe anything in, press <code style="color:var(--accent)">q</code> to quit.
+  </p>
+</section>
+
+<!-- ──────────────────── FEATURES ─────────────── -->
+<section class="section" id="features">
+  <div class="eyebrow">features</div>
+  <h2>Built for streams.<br>Not afterthoughts.</h2>
+
+  <div class="feature-grid" style="margin-top:3rem;">
+    <div class="feature reveal">
+      <span class="feature-number">01</span>
+      <h3>Streaming-native</h3>
+      <p>Designed from scratch for piped input. Debounces at 30fps, buffers up to 50,000 lines, and keeps your cursor exactly where you left it.</p>
+      <span class="feature-accent">→ live render at ~33ms intervals</span>
+    </div>
+    <div class="feature reveal delay-1">
+      <span class="feature-number">02</span>
+      <h3>Six layouts. Zero config.</h3>
+      <p>Switch between minimal, box, rounded, compact, quote, or bare with a single flag. Line numbers, timestamps, and ANSI color all passthrough cleanly.</p>
+      <span class="feature-accent">→ --box  --rounded  --compact</span>
+    </div>
+    <div class="feature reveal delay-2">
+      <span class="feature-number">03</span>
+      <h3>Pipe-safe passthrough</h3>
+      <p>Not a tty? slit steps aside automatically. Use it anywhere in a pipeline without breaking downstream consumers or CI logs.</p>
+      <span class="feature-accent">→ SLIT_FORCE_RENDER=1 to override</span>
+    </div>
+    <div class="feature reveal">
+      <span class="feature-number">04</span>
+      <h3>Capture while viewing</h3>
+      <p>Tee output to a file as it streams with <code style="color:var(--accent);font-size:0.75rem">-o file.log</code>. Save raw input or the display representation with timestamps.</p>
+      <span class="feature-accent">→ raw or display format</span>
+    </div>
+    <div class="feature reveal delay-1">
+      <span class="feature-number">05</span>
+      <h3>Progress aware</h3>
+      <p>Piping a file? slit detects the size and shows a real progress bar. Unknown-length stream? Spinner + line count. Always know where you are.</p>
+      <span class="feature-accent">→ braille spinner by default</span>
+    </div>
+    <div class="feature reveal delay-2">
+      <span class="feature-number">06</span>
+      <h3>Resize-resilient</h3>
+      <p>SIGWINCH-aware. Resize your terminal mid-stream and slit reflows instantly. Ctrl+Z suspend and resume works correctly too.</p>
+      <span class="feature-accent">→ full POSIX signal handling</span>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────────────── IMPLEMENTATIONS ──────── -->
+<section class="section" id="implementations">
+  <div class="eyebrow">implementations</div>
+  <h2>Pick your weapon.</h2>
+  <p class="lead">Three complete, flag-compatible implementations. Same behavior. Wildly different tradeoffs.</p>
+
+  <div class="impl-grid">
+    <div class="impl-card reveal">
+      <div class="impl-lang c">C</div>
+      <div class="impl-stats">
+        <div class="stat-row">
+          <span class="stat-label">binary size</span>
+          <span class="stat-value best">64 KB</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">throughput</span>
+          <span class="stat-value best">151.8 MB/s</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">lines/sec</span>
+          <span class="stat-value best">151,741</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">peak RAM (1M lines)</span>
+          <span class="stat-value best">14.5 MB</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">deps</span>
+          <span class="stat-value">libc only</span>
+        </div>
+      </div>
+      <a class="impl-cta" href="downloads.html">download binary →</a>
+    </div>
+
+    <div class="impl-card reveal delay-1">
+      <div class="impl-lang rust">Rust</div>
+      <div class="impl-stats">
+        <div class="stat-row">
+          <span class="stat-label">binary size</span>
+          <span class="stat-value">2.2 MB</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">throughput</span>
+          <span class="stat-value">77.5 MB/s</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">lines/sec</span>
+          <span class="stat-value">528,000</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">peak RAM (1M lines)</span>
+          <span class="stat-value">22.0 MB</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">deps</span>
+          <span class="stat-value">ratatui + tokio</span>
+        </div>
+      </div>
+      <a class="impl-cta" href="downloads.html">download binary →</a>
+    </div>
+
+    <div class="impl-card reveal delay-2">
+      <div class="impl-lang go">Go</div>
+      <div class="impl-stats">
+        <div class="stat-row">
+          <span class="stat-label">binary size</span>
+          <span class="stat-value">6.0 MB</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">throughput</span>
+          <span class="stat-value">9.8 MB/s</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">lines/sec</span>
+          <span class="stat-value">66,600</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">peak RAM (1M lines)</span>
+          <span class="stat-value">33.4 MB</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">deps</span>
+          <span class="stat-value">bubbletea + cobra</span>
+        </div>
+      </div>
+      <a class="impl-cta" href="downloads.html">download binary →</a>
+    </div>
+  </div>
+  <p class="bench-note">Benchmarks: 1M lines, plain input, Linux x86_64. C wins on throughput; Rust on balance; Go on features.</p>
+</section>
+
+<!-- ──────────────────── EXAMPLES ─────────────── -->
+<section class="section" id="examples">
+  <div class="eyebrow">usage</div>
+  <h2>Pipe it in.</h2>
+
+  <div class="examples-list">
+
+    <div class="example-item reveal">
+      <div class="example-desc">build output with capture</div>
+      <pre class="code-block"><span class="prompt">$ </span><span class="cmd">make</span> <span class="flag">2>&1</span> <span class="prompt">|</span> <span class="cmd">slit</span> <span class="flag">--box</span> <span class="flag">-o</span> <span class="arg">build.log</span></pre>
+    </div>
+
+    <div class="example-item reveal delay-1">
+      <div class="example-desc">live logs with line numbers and timestamps</div>
+      <pre class="code-block"><span class="prompt">$ </span><span class="cmd">tail -f</span> <span class="arg">/var/log/syslog</span> <span class="prompt">|</span> <span class="cmd">slit</span> <span class="flag">--compact</span> <span class="flag">-l</span> <span class="flag">-t</span></pre>
+    </div>
+
+    <div class="example-item reveal delay-2">
+      <div class="example-desc">test runner (transparent to downstream)</div>
+      <pre class="code-block"><span class="prompt">$ </span><span class="cmd">pytest</span> <span class="arg">tests/</span> <span class="prompt">|</span> <span class="cmd">slit</span> <span class="prompt">|</span> <span class="cmd">grep</span> <span class="arg">FAILED</span> <span class="prompt">></span> <span class="arg">failures.log</span></pre>
+    </div>
+
+    <div class="example-item reveal">
+      <div class="example-desc">data pipeline — wrapped but passthrough-safe</div>
+      <pre class="code-block"><span class="prompt">$ </span><span class="cmd">./etl-job</span> <span class="prompt">|</span> <span class="cmd">slit</span> <span class="flag">--rounded</span> <span class="flag">-w</span> <span class="flag">-l</span> <span class="prompt">|</span> <span class="cmd">kafka-producer</span> <span class="flag">--topic</span> <span class="arg">events</span></pre>
+    </div>
+
+    <div class="example-item reveal delay-1">
+      <div class="example-desc">config file (~/.config/slit/config.toml)</div>
+      <pre class="code-block"><span class="comment"># set your defaults once</span>
+<span class="cmd">layout</span> = <span class="arg">"box"</span>
+<span class="cmd">lines</span> = <span class="arg">20</span>
+<span class="cmd">color</span> = <span class="arg">"auto"</span>
+<span class="cmd">wrap</span> = <span class="arg">false</span></pre>
+    </div>
+
+  </div>
+</section>
+
+<!-- ──────────────────── DOWNLOAD CTA ─────────── -->
+<div id="download-cta">
+  <div class="eyebrow" style="justify-content:center;display:flex;margin-bottom:1rem;">v0.1.0</div>
+  <h2>Get slit.</h2>
+  <p class="lead">Linux x86_64. Three implementations. Zero runtime deps for C.</p>
+  <div class="dl-buttons">
+    <a href="downloads.html" class="dl-btn primary">all downloads →</a>
+    <a href="https://github.com/clankercode/slit" target="_blank" rel="noopener" class="dl-btn secondary">view source ↗</a>
+    <a href="https://github.com/clankercode/slit/releases" target="_blank" rel="noopener" class="dl-btn secondary">releases ↗</a>
+  </div>
+</div>
+
+<!-- ──────────────────── FOOTER ───────────────── -->
+<footer>
+  <span>slit v0.1.0 — MIT license</span>
+  <div class="footer-links">
+    <a href="https://github.com/clankercode/slit" target="_blank" rel="noopener">github</a>
+    <a href="https://github.com/clankercode/slit/releases" target="_blank" rel="noopener">releases</a>
+    <a href="https://github.com/clankercode/slit/issues" target="_blank" rel="noopener">issues</a>
+  </div>
+</footer>
+
+<script>
+(function() {
+'use strict';
+
+// ── streaming text content ──────────────────────────────────────
+const LINES = [
+  'cargo build --release',
+  '   Compiling slit v0.1.0 (/home/user/slit/rust)',
+  '   Compiling tokio v1.35.1',
+  '   Compiling ratatui v0.26.1',
+  '   Compiling crossterm v0.27.0',
+  '   Compiling clap v4.4.18',
+  '   Compiling serde v1.0.193',
+  '   Finished release [optimized] target(s) in 8.42s',
+  '$ pytest tests/ -v --tb=short',
+  'PASSED tests/test_buffer.py::test_rollover',
+  'PASSED tests/test_ansi.py::test_color_passthrough',
+  'PASSED tests/test_layout.py::test_box_render',
+  'PASSED tests/test_layout.py::test_rounded_render',
+  'PASSED tests/test_layout.py::test_compact_render',
+  'PASSED tests/test_tee.py::test_raw_output',
+  'PASSED tests/test_tee.py::test_display_output',
+  'PASSED tests/test_resize.py::test_sigwinch',
+  'PASSED tests/test_input.py::test_quit_key',
+  '47 passed in 0.831s',
+  '$ make 2>&1 | slit --box',
+  'cc -O2 -Wall -Wextra -D_POSIX_C_SOURCE=200809L -c src/main.c',
+  'cc -O2 -Wall -Wextra -D_POSIX_C_SOURCE=200809L -c src/render.c',
+  'cc -O2 -Wall -Wextra -D_POSIX_C_SOURCE=200809L -c src/buffer.c',
+  'cc -O2 -Wall -Wextra -D_POSIX_C_SOURCE=200809L -c src/input.c',
+  'cc build/main.o build/render.o build/buffer.o build/input.o -o slit',
+  'binary: build/slit (64K ELF)',
+  '2024-01-15 14:32:01.234 [INFO]  server started on :8080',
+  '2024-01-15 14:32:01.891 [DEBUG] accepted connection fd=47 addr=127.0.0.1:54321',
+  '2024-01-15 14:32:02.103 [DEBUG] buffer: 1,024/50,000 lines active',
+  '2024-01-15 14:32:02.441 [INFO]  processed batch: 10,000 records in 0.087s',
+  '2024-01-15 14:32:02.882 [WARN]  queue depth: 47,291 — consider scaling',
+  '2024-01-15 14:32:03.001 [INFO]  checkpoint saved to /var/data/cp-0042',
+  '2024-01-15 14:32:03.334 [INFO]  flushed 8,192 bytes to disk',
+  'go build -ldflags="-s -w" ./...',
+  'running integration suite...',
+  '  ✓ pipe passthrough (2ms)',
+  '  ✓ terminal resize via SIGWINCH (5ms)',
+  '  ✓ ctrl+c clean exit (1ms)',
+  '  ✓ box layout dimensions (3ms)',
+  '  ✓ rounded layout dimensions (3ms)',
+  '  ✓ line numbers with -l flag (2ms)',
+  '  ✓ timestamps with -t flag (4ms)',
+  '  ✓ tee to file with -o flag (8ms)',
+  '  ✓ append mode with -a flag (6ms)',
+  '  ✓ passthrough when no tty (1ms)',
+  'all 10 integration tests passed in 35ms',
+  'benchmark: 1,000,000 lines / plain input / linux x86_64',
+  '  C    : 1.03M lines/sec   151.8 MB/s   14.5 MB peak',
+  '  Rust :  528K lines/sec    77.5 MB/s   22.0 MB peak',
+  '  Go   :   66K lines/sec     9.8 MB/s   33.4 MB peak',
+  '[2024-01-15 14:32:05.771] pipeline v2.1.4 starting',
+  '[2024-01-15 14:32:05.772] connecting to kafka:9092...',
+  '[2024-01-15 14:32:05.891] consuming from topic: events-raw',
+  '[2024-01-15 14:32:05.900] partition 0: offset 8,472,901',
+  '[2024-01-15 14:32:05.901] partition 1: offset 9,124,773',
+  '[2024-01-15 14:32:05.902] partition 2: offset 7,891,204',
+  'transforming: 10,000 records/batch',
+  '▸ 10,000 records written (0.083s)',
+  '▸ 20,000 records written (0.171s)',
+  '▸ 30,000 records written (0.254s)',
+  '▸ 40,000 records written (0.338s)',
+  '▸ 50,000 records written (0.421s)',
+  'docker build -t myapp:latest .',
+  'Step 1/8 : FROM rust:1.75-slim',
+  'Step 2/8 : WORKDIR /app',
+  'Step 3/8 : COPY Cargo.toml Cargo.lock ./',
+  'Step 4/8 : RUN cargo fetch',
+  'Step 5/8 : COPY src/ ./src/',
+  'Step 6/8 : RUN cargo build --release',
+  'Step 7/8 : RUN strip target/release/slit',
+  'Step 8/8 : CMD ["/app/target/release/slit"]',
+  'Successfully built 8f4a2b9c1d3e',
+  'BenchmarkRenderBox-16        4201 ns/op   512 B/op',
+  'BenchmarkRenderRounded-16    4418 ns/op   512 B/op',
+  'BenchmarkRenderMinimal-16    3812 ns/op   448 B/op',
+  'BenchmarkBufferInsert-16      891 ns/op   128 B/op',
+  'BenchmarkANSIStrip-16         234 ns/op     0 B/op',
+  'ok  github.com/clankercode/slit/go  45.321s',
+  '$ tail -f /var/log/app.log | slit --compact -l',
+  '  1 | INFO  started service on port 8080',
+  '  2 | DEBUG init complete in 12ms',
+  '  3 | INFO  GET /health → 200 (1.2ms)',
+  '  4 | INFO  GET /api/v1/data → 200 (4.8ms)',
+  '  5 | DEBUG gc cycle: freed 2.1 MB in 0.4ms',
+  '  6 | INFO  POST /api/v1/events → 204 (0.9ms)',
+  '  7 | WARN  high latency: /api/v1/query took 312ms',
+  '$ git log --oneline -8',
+  'd408e4f B002/B003 fixes: keyboard input and spinner animation',
+  'ea74d2b bl done B003: c client update on stdin',
+  '3d8a1c9 perf: reduce allocations in render loop',
+  '7f2e4b8 test: add integration tests for layouts',
+  'c1d9e3a docs: update cross-impl-notes',
+  'b91e3f7 feat: add braille spinner variant',
+  'a4f8c2d fix: handle SIGWINCH during render',
+  '$ ./run-all-benchmarks.sh 2>&1 | slit -l -t',
+];
+
+const streamEl = document.getElementById('stream-text');
+
+let lineIdx = 0;
+let lastLineMs = 0;
+let lineIntervalMs = 70; // fast at start
+
+function addStreamLine() {
+  const div = document.createElement('div');
+  div.textContent = LINES[lineIdx % LINES.length];
+  lineIdx++;
+  streamEl.appendChild(div);
+  // keep max 120 lines in dom — stream-bg overflow:hidden clips the top naturally
+  while (streamEl.children.length > 120) {
+    streamEl.removeChild(streamEl.firstChild);
+  }
+}
+
+// pre-populate so the stream looks full on load
+for (let i = 0; i < 90; i++) addStreamLine();
+
+function streamLoop(ts) {
+  if (ts - lastLineMs >= lineIntervalMs) {
+    addStreamLine();
+    lastLineMs = ts;
+  }
+  requestAnimationFrame(streamLoop);
+}
+requestAnimationFrame(streamLoop);
+
+// ── spinner logic ───────────────────────────────────────────────
+const BRAILLE = ['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'];
+let spinIdx = 0;
+const spinEl = document.getElementById('spin-char');
+const lineCtEl = document.getElementById('line-ct');
+const rateEl = document.getElementById('chrome-rate');
+
+function formatCount(n) {
+  if (n >= 1000) return (n/1000).toFixed(1) + 'k';
+  return String(n);
+}
+
+// ── panel / animation ───────────────────────────────────────────
+const panTop   = document.getElementById('panel-top');
+const panBot   = document.getElementById('panel-bottom');
+const panLeft  = document.getElementById('panel-left');
+const panRight = document.getElementById('panel-right');
+const chrome   = document.getElementById('clip-chrome');
+const heroContent = document.getElementById('hero-content');
+const heroScroll  = document.getElementById('hero-scroll');
+const slitCut     = document.getElementById('slit-cut');
+
+// timing (ms)
+const T_PANELS_START  = 400;
+const T_PANELS_DUR    = 1900;
+const T_CHROME_START  = T_PANELS_START + T_PANELS_DUR + 100; // 2400
+const T_CHROME_DUR    = 200;
+const T_SPIN_START    = T_CHROME_START + T_CHROME_DUR;       // 2600
+const T_SPIN_DUR      = 900;
+const T_FADE_START    = T_SPIN_START + T_SPIN_DUR;           // 3500
+const T_FADE_DUR      = 500;
+const T_TITLE_START   = T_FADE_START + T_FADE_DUR + 100;     // 4100
+const T_TITLE_DUR     = 500;
+const T_CUT_START     = T_TITLE_START + T_TITLE_DUR - 50;    // 4550
+const T_SCROLL_START  = T_TITLE_START + T_TITLE_DUR + 400;   // 5000
+
+// panel positions (%)
+const P_START = { t: 2, b: 2, l: 2, r: 2 };
+const P_END   = { t: 32, b: 32, l: 10, r: 10 };
+
+function ease(t) {
+  // cubic ease-in-out
+  return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2;
+}
+
+function lerp(a, b, t) { return a + (b - a) * t; }
+function clamp01(x) { return Math.max(0, Math.min(1, x)); }
+
+let animStart = null;
+let spinInterval = null;
+let lineCount = 0;
+let chromeVisible = false;
+
+function setPanel(el, dim, val) {
+  el.style[dim] = val + '%';
+}
+
+function syncChrome(t, b, l, r) {
+  chrome.style.top    = t + '%';
+  chrome.style.bottom = b + '%';
+  chrome.style.left   = l + '%';
+  chrome.style.right  = r + '%';
+}
+
+function animFrame(ts) {
+  if (!animStart) animStart = ts;
+  const elapsed = ts - animStart;
+
+  // ── Phase: panels squeeze ──
+  if (elapsed >= T_PANELS_START) {
+    const raw = clamp01((elapsed - T_PANELS_START) / T_PANELS_DUR);
+    const e = ease(raw);
+
+    const t = lerp(P_START.t, P_END.t, e);
+    const b = lerp(P_START.b, P_END.b, e);
+    const l = lerp(P_START.l, P_END.l, e);
+    const r = lerp(P_START.r, P_END.r, e);
+
+    setPanel(panTop,   'height', t);
+    setPanel(panBot,   'height', b);
+    setPanel(panLeft,  'width',  l);
+    setPanel(panRight, 'width',  r);
+    syncChrome(t, b, l, r);
+
+    // slow stream as panels close
+    lineIntervalMs = lerp(70, 220, ease(raw));
+  }
+
+  // ── Phase: chrome fade in ──
+  if (elapsed >= T_CHROME_START) {
+    const raw = clamp01((elapsed - T_CHROME_START) / T_CHROME_DUR);
+    chrome.style.opacity = String(ease(raw));
+    if (!chromeVisible && raw > 0) {
+      chromeVisible = true;
+      // start spinner
+      spinInterval = setInterval(() => {
+        spinIdx = (spinIdx + 1) % BRAILLE.length;
+        spinEl.textContent = BRAILLE[spinIdx];
+      }, 80);
+    }
+  }
+
+  // ── Phase: line counter tick ──
+  if (elapsed >= T_SPIN_START) {
+    const raw = clamp01((elapsed - T_SPIN_START) / T_SPIN_DUR);
+    const targetCount = 47283;
+    lineCount = Math.floor(ease(raw) * targetCount);
+    lineCtEl.textContent = formatCount(lineCount) + ' lines';
+
+    const mbps = (ease(raw) * 9.8).toFixed(1);
+    rateEl.textContent = mbps + ' MB/s';
+  }
+
+  // ── Phase: fade everything out ──
+  if (elapsed >= T_FADE_START) {
+    const raw = clamp01((elapsed - T_FADE_START) / T_FADE_DUR);
+    const op = 1 - ease(raw);
+    chrome.style.opacity   = String(op);
+    document.getElementById('stream-bg').style.opacity = String(op);
+    panTop.style.opacity   = String(op);
+    panBot.style.opacity   = String(op);
+    panLeft.style.opacity  = String(op);
+    panRight.style.opacity = String(op);
+
+    if (raw >= 1 && spinInterval) {
+      clearInterval(spinInterval);
+      spinInterval = null;
+    }
+  }
+
+  // ── Phase: SLIT title appears ──
+  if (elapsed >= T_TITLE_START) {
+    const raw = clamp01((elapsed - T_TITLE_START) / T_TITLE_DUR);
+    const e = ease(raw);
+    const offset = lerp(28, 0, e);
+    heroContent.style.opacity   = String(e);
+    heroContent.style.transform = `translateY(calc(-50% + ${offset}px))`;
+    if (raw >= 0.5) heroContent.classList.add('visible');
+  }
+
+  // ── Phase: slit-cut slash ──
+  if (elapsed >= T_CUT_START) {
+    const raw = clamp01((elapsed - T_CUT_START) / 280);
+    const e = ease(raw);
+    slitCut.style.opacity         = String(Math.min(1, e * 3));
+    slitCut.style.transform       = `scaleX(${e})`;
+  }
+
+  // ── Phase: scroll indicator ──
+  if (elapsed >= T_SCROLL_START) {
+    const raw = clamp01((elapsed - T_SCROLL_START) / 400);
+    heroScroll.style.opacity = String(ease(raw) * 0.6);
+  }
+
+  requestAnimationFrame(animFrame);
+}
+
+// init panel positions
+setPanel(panTop,   'height', P_START.t);
+setPanel(panBot,   'height', P_START.b);
+setPanel(panLeft,  'width',  P_START.l);
+setPanel(panRight, 'width',  P_START.r);
+syncChrome(P_START.t, P_START.b, P_START.l, P_START.r);
+
+requestAnimationFrame(animFrame);
+
+// ── copy install command ────────────────────────────────────────
+window.copyInstall = function() {
+  const cmd = document.getElementById('install-cmd').textContent;
+  navigator.clipboard.writeText(cmd).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = 'copied';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'copy';
+      btn.classList.remove('copied');
+    }, 2000);
+  }).catch(() => {
+    // fallback: select text
+    const range = document.createRange();
+    range.selectNode(document.getElementById('install-cmd'));
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+  });
+};
+
+// ── nav opaque on scroll ────────────────────────────────────────
+window.addEventListener('scroll', () => {
+  document.getElementById('nav').classList.toggle('opaque', window.scrollY > 60);
+}, { passive: true });
+
+// ── scroll reveal ───────────────────────────────────────────────
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('in');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+})();
+</script>
+</body>
+</html>
