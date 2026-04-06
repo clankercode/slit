@@ -56,7 +56,7 @@ run-rust *args:
     cd rust && cargo run --release -- {{args}}
 
 run-c *args:
-    cd c && make build && ./c/slit {{args}}
+    cd c && make build && ./slit {{args}}
 
 completions: build
     mkdir -p completions
