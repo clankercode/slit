@@ -11,7 +11,6 @@
 volatile sig_atomic_t sigint_flag = 0;
 volatile sig_atomic_t sigwinch_flag = 0;
 volatile sig_atomic_t sigtstp_flag = 0;
-volatile sig_atomic_t sigcont_flag = 0;
 
 static struct terminal_state term_state = {
     .tty_fd = -1,
@@ -32,11 +31,6 @@ static void sigwinch_handler(int sig) {
 static void sigtstp_handler(int sig) {
     (void)sig;
     sigtstp_flag = 1;
-}
-
-static void sigcont_handler(int sig) {
-    (void)sig;
-    sigcont_flag = 1;
 }
 
 void signals_install(void) {
@@ -63,10 +57,6 @@ void signals_install(void) {
     sa.sa_handler = sigtstp_handler;
     sa.sa_flags = 0;
     sigaction(SIGTSTP, &sa, NULL);
-
-    sa.sa_handler = sigcont_handler;
-    sa.sa_flags = 0;
-    sigaction(SIGCONT, &sa, NULL);
 }
 
 int term_init(void) {

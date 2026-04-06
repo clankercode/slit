@@ -73,6 +73,5 @@ struct slit_config {
 extern volatile sig_atomic_t sigint_flag;
 extern volatile sig_atomic_t sigwinch_flag;
 extern volatile sig_atomic_t sigtstp_flag;
-extern volatile sig_atomic_t sigcont_flag;
 
 #endif /* SLIT_H */

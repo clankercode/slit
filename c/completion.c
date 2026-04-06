@@ -77,10 +77,10 @@ static const char fish_completion[] =
 "complete -c slit -l help -d 'Show help'\n"
 "complete -c slit -l version -d 'Show version'\n";
 
-void completion_print(const char *shell) {
+int completion_print(const char *shell) {
     if (!shell) {
         fprintf(stderr, "Usage: slit completion <shell>\nSupported: bash, zsh, fish\n");
-        return;
+        return 1;
     }
     if (strcmp(shell, "bash") == 0) {
         fwrite(bash_completion, 1, sizeof(bash_completion) - 1, stdout);
@@ -90,5 +90,7 @@ void completion_print(const char *shell) {
         fwrite(fish_completion, 1, sizeof(fish_completion) - 1, stdout);
     } else {
         fprintf(stderr, "Unsupported shell: %s\nSupported: bash, zsh, fish\n", shell);
+        return 1;
     }
+    return 0;
 }

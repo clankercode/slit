@@ -90,7 +90,7 @@ static void render_box(enum layout_type type, int width, const char *title,
         fprintf(stderr, " %s ", status);
     }
     for (int i = 0; i < remaining; i++) fprintf(stderr, "%s", h);
-    fprintf(stderr, "%s", br);
+    fprintf(stderr, "%s\n", br);
 }
 
 static void render_compact(int width, const char *title,
@@ -130,7 +130,7 @@ static void render_minimal(const char **content_lines, int content_count,
         fprintf(stderr, "%s\n", content_lines[i] ? content_lines[i] : "");
     }
     if (status) {
-        fprintf(stderr, "%s", status);
+        fprintf(stderr, "%s\n", status);
     }
 }
 
@@ -186,6 +186,7 @@ static void render_quote(int width, const char *title,
             for (int i = vis; i < width; i++) fputc(' ', stderr);
             fprintf(stderr, "\x1b[0m");
         }
+        fputc('\n', stderr);
     }
 }
 

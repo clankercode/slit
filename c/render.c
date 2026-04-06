@@ -122,6 +122,13 @@ size_t trim_line(const char *src, char *dst, size_t dst_size, size_t width, cons
         }
     }
 
+    if (need_trunc || di > 0) {
+        if (di > 0 && (unsigned char)dst[di - 1] >= 0xC0) {
+            di--;
+            if (visible > 0) visible--;
+        }
+    }
+
     if (need_trunc) {
         if (visible + trunc_visible > max_visible) {
             size_t remove_bytes = 0;
@@ -149,81 +156,125 @@ int wrap_line(const char *line, size_t width, char ***out_lines, int *out_count)
     if (width == 0) width = 1;
 
     size_t line_len = strlen(line);
-    int capacity = 8;
-    char **result = malloc(capacity * sizeof(char *));
+    int result_cap = 8;
+    char **result = malloc(result_cap * sizeof(char *));
     if (!result) return -1;
     int count = 0;
 
-    size_t seg_start = 0;
+    size_t seg_cap = line_len + 128;
+    char *seg = malloc(seg_cap);
+    if (!seg) { free(result); return -1; }
+    size_t seg_len = 0;
+
+    char active_sgr[256];
+    size_t active_sgr_len = 0;
+
+    char pending[1024];
+    size_t pending_len = 0;
+
     size_t visible = 0;
-    int state = 0;
+    size_t i = 0;
 
-    for (size_t i = 0; i <= line_len; i++) {
-        int at_end = (i == line_len);
-        int should_break = 0;
+    while (i < line_len) {
+        unsigned char c = (unsigned char)line[i];
 
-        if (!at_end) {
-            unsigned char c = (unsigned char)line[i];
-            if (state == 0) {
-                if (c == '\x1b') {
-                    state = 1;
-                } else if ((c & 0xC0) != 0x80) {
-                    visible++;
-                    if (visible > width) {
-                        should_break = 1;
+        if (c == '\x1b') {
+            size_t seq_start = i;
+            i++;
+            if (i < line_len && (unsigned char)line[i] == '[') {
+                i++;
+                while (i < line_len) {
+                    unsigned char sc = (unsigned char)line[i];
+                    if (sc >= '@' && sc <= '~') {
+                        if (sc == 'm') {
+                            size_t slen = i - seq_start + 1;
+                            if (slen == 4 && line[seq_start + 2] == '0') {
+                                active_sgr_len = 0;
+                            } else if (slen < sizeof(active_sgr)) {
+                                memcpy(active_sgr, line + seq_start, slen);
+                                active_sgr_len = slen;
+                            }
+                        }
+                        i++;
+                        break;
                     }
+                    i++;
                 }
-            } else if (state == 1) {
-                if (c == '[') state = 2;
-                else if (c == ']') state = 3;
-                else state = 0;
-            } else if (state == 2) {
-                if (c >= '@' && c <= '~') state = 0;
-            } else if (state == 3) {
-                if (c == '\x07') state = 0;
+            } else if (i < line_len && (unsigned char)line[i] == ']') {
+                i++;
+                while (i < line_len) {
+                    if ((unsigned char)line[i] == '\x07') { i++; break; }
+                    i++;
+                }
+            } else {
+                if (i < line_len) i++;
             }
-        } else {
-            should_break = 1;
+            size_t seq_len = i - seq_start;
+            if (pending_len + seq_len < sizeof(pending)) {
+                memcpy(pending + pending_len, line + seq_start, seq_len);
+                pending_len += seq_len;
+            }
+            continue;
         }
 
-        if (should_break) {
-            size_t seg_end = at_end ? i : i;
-            size_t seg_len = seg_end - seg_start;
-
-            char *seg = malloc(seg_len + 1);
-            if (!seg) {
-                for (int j = 0; j < count; j++) free(result[j]);
-                free(result);
-                return -1;
+        if ((c & 0xC0) != 0x80 && visible >= width) {
+            if (active_sgr_len > 0 && seg_len + 4 < seg_cap) {
+                memcpy(seg + seg_len, "\x1b[0m", 4);
+                seg_len += 4;
             }
-            memcpy(seg, line + seg_start, seg_len);
             seg[seg_len] = '\0';
-
-            if (count + 1 >= capacity) {
-                capacity *= 2;
-                char **new_result = realloc(result, capacity * sizeof(char *));
-                if (!new_result) {
-                    free(seg);
-                    for (int j = 0; j < count; j++) free(result[j]);
-                    free(result);
-                    return -1;
-                }
-                result = new_result;
+            if (count + 1 >= result_cap) {
+                result_cap *= 2;
+                char **nr = realloc(result, result_cap * sizeof(char *));
+                if (!nr) { free(seg); for (int j = 0; j < count; j++) free(result[j]); free(result); return -1; }
+                result = nr;
             }
             result[count++] = seg;
 
-            if (!at_end) {
-                seg_start = i;
-                visible = 1;
+            seg = malloc(seg_cap);
+            if (!seg) { for (int j = 0; j < count; j++) free(result[j]); free(result); return -1; }
+            seg_len = 0;
+            if (active_sgr_len > 0) {
+                memcpy(seg, active_sgr, active_sgr_len);
+                seg_len = active_sgr_len;
             }
+            if (pending_len > 0 && seg_len + pending_len < seg_cap) {
+                memcpy(seg + seg_len, pending, pending_len);
+                seg_len += pending_len;
+            }
+            pending_len = 0;
+            visible = 0;
         }
+
+        if (pending_len > 0 && (c & 0xC0) != 0x80) {
+            if (seg_len + pending_len < seg_cap) {
+                memcpy(seg + seg_len, pending, pending_len);
+                seg_len += pending_len;
+            }
+            pending_len = 0;
+        }
+
+        if (seg_len + 1 < seg_cap) seg[seg_len++] = line[i];
+        if ((c & 0xC0) != 0x80) visible++;
+        i++;
     }
 
-    if (count == 0) {
-        char *empty = malloc(1);
-        if (!empty) { free(result); return -1; }
-        empty[0] = '\0';
-        result[count++] = empty;
+    if (pending_len > 0 && seg_len + pending_len < seg_cap) {
+        memcpy(seg + seg_len, pending, pending_len);
+        seg_len += pending_len;
+    }
+
+    if (seg_len > 0 || count == 0) {
+        seg[seg_len] = '\0';
+        if (count + 1 >= result_cap) {
+            result_cap *= 2;
+            char **nr = realloc(result, result_cap * sizeof(char *));
+            if (!nr) { free(seg); for (int j = 0; j < count; j++) free(result[j]); free(result); return -1; }
+            result = nr;
+        }
+        result[count++] = seg;
+    } else {
+        free(seg);
     }
 
     *out_lines = result;

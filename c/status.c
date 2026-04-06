@@ -22,20 +22,8 @@ char *format_status_line(enum spinner_type spinner, int frame, int eof,
                          long file_size, int width) {
     const char *spinner_str = spinner_frame(spinner, frame);
     char byte_str[32] = "";
+    format_bytes_human(total_bytes, byte_str, sizeof(byte_str));
     char progress_str[64] = "";
-
-    if (file_size > 0) {
-        int bar_width = 10;
-        int filled = (int)((double)bar_width * (double)total_bytes / (double)file_size);
-        if (filled > bar_width) filled = bar_width;
-        if (filled < 0) filled = 0;
-        char bar[12];
-        int pos = 0;
-        for (int i = 0; i < filled; i++) bar[pos++] = '=';
-        for (int i = filled; i < bar_width; i++) bar[pos++] = ' ';
-        bar[pos] = '\0';
-        snprintf(progress_str, sizeof(progress_str), " [%s]", bar);
-    }
 
     if (file_size > 0) {
         int bar_width = 10;
@@ -50,43 +38,55 @@ char *format_status_line(enum spinner_type spinner, int frame, int eof,
         snprintf(progress_str, sizeof(progress_str), " [%s]", bar);
     }
 
-    const char *keys = (spinner != SPINNER_OFF) ? "  q:quit" : "";
+    const char *keys = (spinner != SPINNER_OFF) ? "q:quit" : "";
+    int keys_vis = (int)visible_strlen(keys);
 
-    char line[1024];
+    char lhs[512];
     if (eof) {
         if (byte_str[0]) {
-            snprintf(line, sizeof(line), "Done. (%zu lines, %s)%s%s",
-                     line_count, byte_str, progress_str, keys);
+            snprintf(lhs, sizeof(lhs), "Done. (%zu lines, %s)%s",
+                     line_count, byte_str, progress_str);
         } else {
-            snprintf(line, sizeof(line), "Done. (%zu lines)%s%s",
-                     line_count, progress_str, keys);
+            snprintf(lhs, sizeof(lhs), "Done. (%zu lines)%s",
+                     line_count, progress_str);
         }
     } else {
         if (byte_str[0]) {
-            snprintf(line, sizeof(line), "%s Streaming... (%zu lines, %s)%s%s",
-                     spinner_str, line_count, byte_str, progress_str, keys);
+            snprintf(lhs, sizeof(lhs), "%s Streaming... (%zu lines, %s)%s",
+                     spinner_str, line_count, byte_str, progress_str);
         } else {
-            snprintf(line, sizeof(line), "%s Streaming... (%zu lines)%s%s",
-                     spinner_str, line_count, progress_str, keys);
+            snprintf(lhs, sizeof(lhs), "%s Streaming... (%zu lines)%s",
+                     spinner_str, line_count, progress_str);
         }
     }
 
     if (width <= 0) {
-        return strdup(line);
+        size_t total = strlen(lhs) + (keys_vis > 0 ? 2 + strlen(keys) : 0);
+        char *r = malloc(total + 1);
+        if (keys_vis > 0) snprintf(r, total + 1, "%s  %s", lhs, keys);
+        else { memcpy(r, lhs, strlen(lhs) + 1); }
+        return r;
     }
 
-    int vis = (int)visible_strlen(line);
+    int lhs_vis = (int)visible_strlen(lhs);
     char *result = malloc(width + 1);
-    if (!result) return strdup(line);
+    if (!result) return strdup(lhs);
 
-    if (vis >= width) {
-        trim_line(line, result, width + 1, width, "");
+    if (lhs_vis + (keys_vis > 0 ? 2 + keys_vis : 0) >= width) {
+        trim_line(lhs, result, width + 1, width, "");
     } else {
-        strcpy(result, line);
-        int pad = width - vis;
+        strcpy(result, lhs);
         size_t slen = strlen(result);
+        int pad = width - lhs_vis - (keys_vis > 0 ? 2 + keys_vis : 0);
         for (int i = 0; i < pad; i++) result[slen + i] = ' ';
-        result[slen + pad] = '\0';
+        slen += pad;
+        if (keys_vis > 0) {
+            result[slen++] = ' ';
+            result[slen++] = ' ';
+            memcpy(result + slen, keys, strlen(keys));
+            slen += strlen(keys);
+        }
+        result[slen] = '\0';
     }
 
     return result;
