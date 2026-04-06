@@ -181,6 +181,8 @@ cp rust/target/release/slit ~/.local/bin/slit
 cd c && make install PREFIX=~/.local
 ```
 
+If `man slit` still does not resolve after installing to `~/.local`, add `~/.local/share/man` to `MANPATH`.
+
 ## Testing
 
 ```sh

@@ -80,15 +80,21 @@ completions-rust: build-rust
 
 install-go: build-go
     mkdir -p ~/.local/bin
+    mkdir -p ~/.local/share/man/man1
     cp go/slit ~/.local/bin/slit
+    ./go/slit --generate-man > ~/.local/share/man/man1/slit.1
 
 install-rust: build-rust
     mkdir -p ~/.local/bin
+    mkdir -p ~/.local/share/man/man1
     cp rust/target/release/slit ~/.local/bin/slit
+    ./rust/target/release/slit --generate-man > ~/.local/share/man/man1/slit.1
 
 install-c: build-c
     mkdir -p ~/.local/bin
+    mkdir -p ~/.local/share/man/man1
     cp c/slit ~/.local/bin/slit
+    ./c/slit --generate-man > ~/.local/share/man/man1/slit.1
 
 benchmark: build-all
     ./scripts/benchmark --ansi
