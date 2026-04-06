@@ -1,7 +1,12 @@
+use unicode_width::UnicodeWidthChar;
 use unicode_width::UnicodeWidthStr;
 
 fn width(s: &str) -> usize {
     UnicodeWidthStr::width(s)
+}
+
+fn char_width(ch: char) -> usize {
+    UnicodeWidthChar::width(ch).unwrap_or(0)
 }
 
 pub fn strip_ansi(s: &str) -> String {
@@ -26,6 +31,10 @@ pub fn strip_ansi(s: &str) -> String {
                     while i < chars.len() {
                         if chars[i] == '\x07' {
                             i += 1;
+                            break;
+                        }
+                        if chars[i] == '\x1b' && i + 1 < chars.len() && chars[i + 1] == '\\' {
+                            i += 2;
                             break;
                         }
                         i += 1;
@@ -57,7 +66,7 @@ pub fn trim_line(line: &str, width_limit: usize, trunc_char: &str) -> String {
     let mut result = String::new();
     let mut w = 0;
     for ch in line.chars() {
-        let cw = width(&ch.to_string());
+        let cw = char_width(ch);
         if w + cw > target {
             break;
         }
@@ -99,6 +108,10 @@ pub fn trim_line_ansi(line: &str, width_limit: usize, trunc_char: &str) -> Strin
                         i += 1;
                         break;
                     }
+                    if chars[i] == '\x1b' && i + 1 < chars.len() && chars[i + 1] == '\\' {
+                        i += 2;
+                        break;
+                    }
                     i += 1;
                 }
             } else {
@@ -112,7 +125,7 @@ pub fn trim_line_ansi(line: &str, width_limit: usize, trunc_char: &str) -> Strin
         if visible >= target {
             break;
         }
-        let cw = width(&chars[i].to_string());
+        let cw = char_width(chars[i]);
         result.push(chars[i]);
         visible += cw;
         i += 1;
@@ -162,7 +175,7 @@ pub fn wrap_line(line: &str, width_limit: usize) -> Vec<String> {
     let mut current = String::new();
     let mut w = 0;
     for ch in line.chars() {
-        let cw = width(&ch.to_string());
+        let cw = char_width(ch);
         if w + cw > width_limit && w > 0 {
             result.push(current.clone());
             current.clear();
@@ -211,6 +224,10 @@ pub fn wrap_line_ansi(line: &str, width_limit: usize) -> Vec<String> {
                         i += 1;
                         break;
                     }
+                    if chars[i] == '\x1b' && i + 1 < chars.len() && chars[i + 1] == '\\' {
+                        i += 2;
+                        break;
+                    }
                     i += 1;
                 }
             } else {
@@ -245,7 +262,7 @@ pub fn wrap_line_ansi(line: &str, width_limit: usize) -> Vec<String> {
             pending_ansi.clear();
         }
         current_line.push(chars[i]);
-        let cw = width(&chars[i].to_string());
+        let cw = char_width(chars[i]);
         visible += cw;
         i += 1;
     }

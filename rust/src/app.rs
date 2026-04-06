@@ -205,7 +205,11 @@ impl App {
                         self.needs_reinit = false;
                     }
                     if self.dirty {
-                        let _ = self.do_render(&mut terminal);
+                        if let Err(e) = self.do_render(&mut terminal) {
+                            if let Some(ref dl) = self.debug_logger {
+                                dl.log(&format!("render error: {}", e));
+                            }
+                        }
                         self.dirty = false;
                     }
                     if self.eof {

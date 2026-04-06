@@ -108,6 +108,10 @@ impl Config {
         // Apply CLI overrides (CLI always wins)
         config.apply_cli(cli);
 
+        if config.max_lines == 0 {
+            anyhow::bail!("max_lines must be greater than 0");
+        }
+
         Ok(config)
     }
 
