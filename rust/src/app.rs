@@ -151,7 +151,7 @@ impl App {
         }
 
         let mut events = EventStream::new();
-        let mut tick = tokio::time::interval(Duration::from_millis(33));
+        let mut tick = tokio::time::interval(Duration::from_millis(10));
         tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
         loop {
@@ -195,7 +195,7 @@ impl App {
                 }
                 _ = tick.tick() => {
                     self.tick_count += 1;
-                    if !self.eof && self.tick_count.is_multiple_of(3) {
+                    if !self.eof && self.tick_count.is_multiple_of(10) {
                         self.spinner_frame += 1;
                     }
                     if self.needs_reinit {
