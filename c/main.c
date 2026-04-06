@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <getopt.h>
 #include <poll.h>
 #include <sys/stat.h>
@@ -620,6 +621,7 @@ int main(int argc, char *argv[]) {
             do {
                 ssize_t nread = getline(&line, &line_len, stdin);
                 if (nread == -1) {
+                    if (errno == EINTR) continue;
                     eof_reached = 1;
                     debug_log("EOF reached, total_lines=%zu", buffer_total_lines(buf));
                     break;
@@ -656,12 +658,12 @@ int main(int argc, char *argv[]) {
         }
 
         int force_render_now = eof_reached || sigwinch_flag || sigtstp_flag;
-        if ((dirty || eof_reached) && (force_render_now || !last_render_time.tv_sec)) {
+        if (dirty || eof_reached) {
             struct timespec now;
             clock_gettime(CLOCK_MONOTONIC, &now);
             long elapsed_ms = (now.tv_sec - last_render_time.tv_sec) * 1000L +
                               (now.tv_nsec - last_render_time.tv_nsec) / 1000000L;
-            if (force_render_now || elapsed_ms >= RENDER_INTERVAL_MS) {
+            if (!last_render_time.tv_sec || force_render_now || elapsed_ms >= RENDER_INTERVAL_MS) {
                 last_render_time = now;
                 render_count++;
                 if (render_count % SPINNER_THROTTLE == 0)

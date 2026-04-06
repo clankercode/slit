@@ -16,7 +16,7 @@ TEST_TERMINAL_OBJS = $(TEST_TERMINAL_SRCS:.c=.o)
 TEST_RENDER_SRCS = test/test_render.c render.c
 TEST_RENDER_OBJS = $(TEST_RENDER_SRCS:.c=.o)
 
-.PREFIX = /usr/local
+PREFIX = /usr/local
 
 .PHONY: all build clean test test_buffer test_terminal test_render valgrind install
 

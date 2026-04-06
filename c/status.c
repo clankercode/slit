@@ -69,17 +69,19 @@ char *format_status_line(enum spinner_type spinner, int frame, int eof,
     }
 
     int lhs_vis = (int)visible_strlen(lhs);
-    char *result = malloc(width + 1);
+    size_t lhs_byte_len = strlen(lhs);
+    size_t keys_byte_len = keys_vis > 0 ? 2 + strlen(keys) : 0;
+    int gap = lhs_vis + (keys_vis > 0 ? 2 + keys_vis : 0) >= width ? 0 : width - lhs_vis - (keys_vis > 0 ? 2 + keys_vis : 0);
+    size_t buf_size = lhs_byte_len + gap + keys_byte_len + 1;
+    char *result = malloc(buf_size);
     if (!result) return strdup(lhs);
 
     if (lhs_vis + (keys_vis > 0 ? 2 + keys_vis : 0) >= width) {
-        trim_line(lhs, result, width + 1, width, "");
+        trim_line(lhs, result, buf_size, width, "");
     } else {
-        strcpy(result, lhs);
-        size_t slen = strlen(result);
-        int pad = width - lhs_vis - (keys_vis > 0 ? 2 + keys_vis : 0);
-        for (int i = 0; i < pad; i++) result[slen + i] = ' ';
-        slen += pad;
+        memcpy(result, lhs, lhs_byte_len + 1);
+        size_t slen = lhs_byte_len;
+        for (int i = 0; i < gap; i++) result[slen++] = ' ';
         if (keys_vis > 0) {
             result[slen++] = ' ';
             result[slen++] = ' ';
