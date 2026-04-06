@@ -1044,13 +1044,13 @@ const T_PANELS_DUR    = 1900;
 const T_CHROME_START  = T_PANELS_START + T_PANELS_DUR + 100; // 2400
 const T_CHROME_DUR    = 200;
 const T_SPIN_START    = T_CHROME_START + T_CHROME_DUR;       // 2600
-const T_SPIN_DUR      = 900;
-const T_FADE_START    = T_SPIN_START + T_SPIN_DUR;           // 3500
-const T_FADE_DUR      = 500;
-const T_TITLE_START   = T_FADE_START + T_FADE_DUR + 100;     // 4100
-const T_TITLE_DUR     = 500;
-const T_CUT_START     = T_TITLE_START + T_TITLE_DUR - 50;    // 4550
-const T_SCROLL_START  = T_TITLE_START + T_TITLE_DUR + 400;   // 5000
+const T_SPIN_DUR      = 2200;                                // chrome dwells: 2600→4800
+const T_FADE_START    = T_SPIN_START + T_SPIN_DUR;           // 4800
+const T_FADE_DUR      = 700;
+const T_TITLE_START   = T_FADE_START + T_FADE_DUR + 150;     // 5650
+const T_TITLE_DUR     = 1000;                                // slower reveal
+const T_CUT_START     = T_TITLE_START + T_TITLE_DUR - 80;    // 6570
+const T_SCROLL_START  = T_TITLE_START + T_TITLE_DUR + 500;   // 7150
 
 // panel positions (%)
 const P_START = { t: 2, b: 2, l: 2, r: 2 };
