@@ -4,3 +4,4 @@ c/slit
 target/
 *.o
 __pycache__/
+benchmark-results.txt

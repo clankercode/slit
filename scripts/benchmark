@@ -20,6 +20,8 @@ import time
 import fcntl
 import select
 import signal
+from datetime import datetime
+from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tests", "cross-impl"))
 from pty_runner import BINARIES, DEFAULT_ROWS, DEFAULT_COLS
@@ -57,7 +59,7 @@ def generate_ansi(count):
     return "".join(parts).encode()
 
 
-def run_benchmark(binary, input_data, rows=DEFAULT_ROWS, cols=DEFAULT_COLS):
+def run_benchmark(binary, input_data, timeout=15.0, rows=DEFAULT_ROWS, cols=DEFAULT_COLS):
     master_fd, slave_fd = os.openpty()
     winsize = struct.pack("HHHH", rows, cols, 0, 0)
     fcntl.ioctl(slave_fd, termios.TIOCSWINSZ, winsize)
@@ -95,6 +97,7 @@ def run_benchmark(binary, input_data, rows=DEFAULT_ROWS, cols=DEFAULT_COLS):
     os.close(data_r)
 
     peak_rss = 0
+    timed_out = False
 
     try:
         # wait for init, drain PTY, respond to DSR
@@ -110,6 +113,7 @@ def run_benchmark(binary, input_data, rows=DEFAULT_ROWS, cols=DEFAULT_COLS):
                     break
 
         t_wall_start = time.monotonic()
+        write_deadline = t_wall_start + timeout
         written = 0
         view = memoryview(input_data)
         child_died = False
@@ -136,7 +140,10 @@ def run_benchmark(binary, input_data, rows=DEFAULT_ROWS, cols=DEFAULT_COLS):
                 except OSError:
                     pass
 
-            r, w, _ = select.select([], [data_w], [], 0.5)
+            r, w, _ = select.select([], [data_w], [], min(0.5, max(0, write_deadline - time.monotonic())))
+            if time.monotonic() >= write_deadline:
+                timed_out = True
+                break
             if not w:
                 break
             chunk = view[written:written + 65536]
@@ -157,8 +164,8 @@ def run_benchmark(binary, input_data, rows=DEFAULT_ROWS, cols=DEFAULT_COLS):
 
         os.close(data_w)
 
-        # drain PTY and settle
-        settle_deadline = time.monotonic() + 0.5
+        # drain PTY and settle (capped by remaining timeout)
+        settle_deadline = time.monotonic() + min(0.5, max(0, write_deadline - time.monotonic()))
         while time.monotonic() < settle_deadline:
             try:
                 pid_res, status = os.waitpid(pid, os.WNOHANG)
@@ -232,6 +239,7 @@ def run_benchmark(binary, input_data, rows=DEFAULT_ROWS, cols=DEFAULT_COLS):
     return {
         "wall_s": t_wall,
         "peak_rss_kb": peak_rss,
+        "timed_out": timed_out,
     }
 
 
@@ -256,6 +264,7 @@ def main():
     parser.add_argument("--impls", default="go,rust,c", help="Comma-separated impls")
     parser.add_argument("--sizes", default="1k,10k,100k,1m", help="Comma-separated sizes")
     parser.add_argument("--iterations", type=int, default=2, help="Runs per config (median reported)")
+    parser.add_argument("--timeout", type=float, default=15.0, help="Per-run timeout in seconds (default: 15)")
     parser.add_argument("--ansi", action="store_true", help="Also run with ANSI-colored input")
     args = parser.parse_args()
 
@@ -283,41 +292,49 @@ def main():
     total_runs = len(modes) * len(size_keys) * len(impls) * args.iterations
     run_idx = 0
 
-    # header
-    print(f"\n{'='*90}")
-    print(f"  slit benchmark  |  {args.iterations} iteration{'s' if args.iterations != 1 else ''} (median)  |  {total_runs} total runs")
-    print(f"{'='*90}\n")
+    lines = []
+    def out(s=""):
+        print(s)
+        lines.append(s)
+
+    now = datetime.now()
+    date_str = now.strftime("%Y-%m-%d %H:%M")
+
+    out(f"\n{'='*90}")
+    out(f"  slit benchmark  |  {date_str}")
+    out(f"  {args.iterations} iteration{'s' if args.iterations != 1 else ''} (median)  |  timeout {args.timeout:.0f}s  |  {total_runs} total runs")
+    out(f"{'='*90}\n")
 
     for mode_name, gen_fn in modes:
-        print(f"  [{mode_name} input]")
-        print()
+        out(f"  [{mode_name} input]")
+        out()
 
-        header = (
+        out(
             f"  {'Impl':<6} {'Lines':>10} {'Input':>10} "
-            f"{'Wall':>8} {'Lines/s':>12} {'MB/s':>8} {'Peak RSS':>10}  {'Runs':>10}"
+            f"{'Wall':>8} {'Lines/s':>12} {'MB/s':>8} {'Peak RSS':>10}  {'Runs':>12}"
         )
-        print(header)
-        print(f"  {'-'*6} {'-'*10} {'-'*10} {'-'*8} {'-'*12} {'-'*8} {'-'*10}  {'-'*10}")
+        out(f"  {'-'*6} {'-'*10} {'-'*10} {'-'*8} {'-'*12} {'-'*8} {'-'*10}  {'-'*12}")
 
         for size_key in size_keys:
             count = LINE_COUNTS.get(size_key)
             if count is None:
-                print(f"  Unknown size: {size_key}", file=sys.stderr)
+                out(f"  Unknown size: {size_key}")
                 continue
 
-            t_gen = time.monotonic()
             input_data = gen_fn(count)
-            t_gen = time.monotonic() - t_gen
             input_mb = len(input_data) / (1024 * 1024)
 
             for impl_name, binary in impls:
                 results = []
                 run_durations = []
+                any_timeout = False
                 for i in range(args.iterations):
                     run_idx += 1
                     t_run = time.monotonic()
-                    r = run_benchmark(binary, input_data)
+                    r = run_benchmark(binary, input_data, timeout=args.timeout)
                     t_run = time.monotonic() - t_run
+                    if r["timed_out"]:
+                        any_timeout = True
                     results.append(r)
                     run_durations.append(t_run)
 
@@ -331,12 +348,13 @@ def main():
 
                 run_total = sum(run_durations)
                 runs_str = f"{run_total:.1f}s ({args.iterations}x{run_total/args.iterations:.1f}s)"
+                timeout_mark = " TIMEOUT" if any_timeout else ""
 
-                print(
+                out(
                     f"  {impl_name:<6} {count:>10,} {fmt_bytes(len(input_data)):>10} "
-                    f"{wall:>7.2f}s {lps:>11,.0f} {mbps:>7.1f}  {fmt_kb(med['peak_rss_kb']):>10}  {runs_str:>10}"
+                    f"{wall:>7.2f}s {lps:>11,.0f} {mbps:>7.1f}  {fmt_kb(med['peak_rss_kb']):>10}  {runs_str:>12}{timeout_mark}"
                 )
-            print()
+            out()
 
     t_overall = time.monotonic() - t_overall_start
     mins = int(t_overall // 60)
@@ -345,8 +363,12 @@ def main():
         overall_str = f"{mins}m {secs:.1f}s"
     else:
         overall_str = f"{secs:.1f}s"
-    print(f"  Overall: {overall_str}  ({run_idx}/{total_runs} runs)")
-    print(f"{'='*90}\n")
+    out(f"  Overall: {overall_str}  ({run_idx}/{total_runs} runs)")
+    out(f"{'='*90}\n")
+
+    results_file = Path(__file__).resolve().parent.parent / "benchmark-results.txt"
+    results_file.write_text("\n".join(lines) + "\n")
+    print(f"  Results saved to {results_file}")
 
 
 if __name__ == "__main__":
