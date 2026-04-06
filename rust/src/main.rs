@@ -20,7 +20,7 @@ use config::Config;
 #[command(long_about = "slit reads stdin into a fixed-height pane, trims lines to terminal width, and re-renders on each new line.")]
 #[command(version)]
 pub struct Cli {
-    #[arg(short = 'n', long, help = "Number of lines to display (0 = auto/terminal height - 1)")]
+    #[arg(short = 'n', long, help = "Number of lines to display (0 = auto, defaults to 2/3 terminal height)")]
     pub lines: Option<usize>,
 
     #[arg(long, help = "Maximum number of lines to buffer")]

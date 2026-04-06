@@ -287,16 +287,9 @@ impl App {
     }
 
     fn update_content_lines(&mut self) {
-        let layout = self.get_layout();
-        let chrome = layout.chrome_cost();
         if self.config.lines == 0 {
             let term_h = self.height as usize;
-            self.content_lines = term_h
-                .saturating_sub(chrome.top_lines as usize)
-                .saturating_sub(chrome.bottom_lines as usize);
-            if self.content_lines < 1 {
-                self.content_lines = 1;
-            }
+            self.content_lines = (term_h * 2 / 3).max(10);
         } else {
             self.content_lines = self.config.lines;
         }
