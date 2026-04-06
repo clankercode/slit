@@ -1,11 +1,15 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"os"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 	cobradoc "github.com/spf13/cobra/doc"
+	"golang.org/x/term"
 )
 
 var version = "0.1.0"
@@ -58,9 +62,32 @@ var rootCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(1)
 		}
-		_ = cfg
 
-		fmt.Println("streaming not yet implemented")
+		forceRender := os.Getenv("SLIT_FORCE_RENDER") == "1"
+		if !forceRender && !term.IsTerminal(int(os.Stderr.Fd())) {
+			io.Copy(os.Stdout, os.Stdin)
+			return
+		}
+
+		m := model{
+			cfg: cfg,
+			buf: NewRingBuffer(cfg.MaxLines),
+		}
+
+		p := tea.NewProgram(m)
+
+		go func() {
+			scanner := bufio.NewScanner(os.Stdin)
+			for scanner.Scan() {
+				p.Send(lineMsg(scanner.Text()))
+			}
+			p.Send(eofMsg{})
+		}()
+
+		if _, err := p.Run(); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(1)
+		}
 	},
 }
 
@@ -92,8 +119,6 @@ func init() {
 
 	rootCmd.Flags().BoolVar(&flagGenerateMan, "generate-man", false, "Generate man page to stdout")
 	rootCmd.Flags().MarkHidden("generate-man")
-
-	rootCmd.Flags().BoolP("version", "v", false, "Print version and exit")
 
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "completion [bash|zsh|fish]",

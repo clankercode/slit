@@ -95,12 +95,9 @@ func LoadConfigFile() (FileConfig, error) {
 	return cfg, nil
 }
 
-func MergeConfig(defaults Config, file FileConfig) Config {
-	result := defaults
+func MergeConfig(base Config, file FileConfig) Config {
+	result := base
 
-	if file.Display.Layout != "" {
-		result.Layout = file.Display.Layout
-	}
 	if file.Display.Lines > 0 {
 		result.Lines = file.Display.Lines
 	}
@@ -118,6 +115,9 @@ func MergeConfig(defaults Config, file FileConfig) Config {
 	}
 	if file.Display.TruncationChar != "" {
 		result.TruncationChar = file.Display.TruncationChar
+	}
+	if file.Display.Layout != "" {
+		result.Layout = file.Display.Layout
 	}
 	if file.Buffer.MaxLines > 0 {
 		result.MaxLines = file.Buffer.MaxLines
