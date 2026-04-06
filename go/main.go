@@ -93,7 +93,7 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.Flags().IntVarP(&flagLines, "lines", "n", 0, "Number of lines to display (0 = auto/terminal height - 1)")
+	rootCmd.Flags().IntVarP(&flagLines, "lines", "n", 0, "Number of lines to display (0 = auto, 2/3 terminal height, min 10)")
 	rootCmd.Flags().IntVar(&flagMaxLines, "max-lines", 50000, "Maximum number of lines to buffer")
 	rootCmd.Flags().StringVarP(&flagOutput, "output", "o", "", "Write output to file")
 	rootCmd.Flags().BoolVarP(&flagAppend, "append", "a", false, "Append to output file instead of overwriting")

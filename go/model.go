@@ -101,7 +101,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		layout := GetLayout(m.cfg.Layout)
 		if m.cfg.Lines <= 0 {
-			m.contentLines = msg.Height - layout.TopLines - layout.BottomLines
+			available := msg.Height - layout.TopLines - layout.BottomLines
+			m.contentLines = max(10, available*2/3)
 		} else {
 			m.contentLines = m.cfg.Lines
 		}
