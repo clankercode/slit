@@ -1,0 +1,38 @@
+pkgname=slitty
+pkgver=0.2.0
+pkgrel=1
+pkgdesc='Streaming terminal viewer with a fixed-height live pane'
+arch=('x86_64' 'aarch64')
+url='https://github.com/clankercode/slit'
+license=('CC0-1.0')
+depends=()
+makedepends=('gcc' 'make')
+conflicts=('slitty-git' 'slit' 'slit-git')
+provides=('slitty' 'slit')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+  make -C "$srcdir/slit-$pkgver/c" build
+}
+
+check() {
+  make -C "$srcdir/slit-$pkgver/c" test
+}
+
+package() {
+  local src="$srcdir/slit-$pkgver"
+
+  install -Dm755 "$src/c/slit" "$pkgdir/usr/bin/slit"
+  install -Dm644 "$src/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+
+  "$src/c/slit" --generate-man > "$src/slit.1"
+  "$src/c/slit" completion bash > "$src/slit.bash"
+  "$src/c/slit" completion zsh > "$src/_slit"
+  "$src/c/slit" completion fish > "$src/slit.fish"
+
+  install -Dm644 "$src/slit.1" "$pkgdir/usr/share/man/man1/slit.1"
+  install -Dm644 "$src/slit.bash" "$pkgdir/usr/share/bash-completion/completions/slit"
+  install -Dm644 "$src/_slit" "$pkgdir/usr/share/zsh/site-functions/_slit"
+  install -Dm644 "$src/slit.fish" "$pkgdir/usr/share/fish/vendor_completions.d/slit.fish"
+}

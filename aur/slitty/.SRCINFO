@@ -1,0 +1,19 @@
+pkgbase = slitty
+	pkgdesc = Streaming terminal viewer with a fixed-height live pane
+	pkgver = 0.2.0
+	pkgrel = 1
+	url = https://github.com/clankercode/slit
+	arch = x86_64
+	arch = aarch64
+	license = CC0-1.0
+	makedepends = gcc
+	makedepends = make
+	conflicts = slitty-git
+	conflicts = slit
+	conflicts = slit-git
+	provides = slitty
+	provides = slit
+	source = slitty-0.2.0.tar.gz::https://github.com/clankercode/slit/archive/refs/tags/v0.2.0.tar.gz
+	sha256sums = SKIP
+
+pkgname = slitty

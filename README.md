@@ -141,7 +141,15 @@ Meta
 
 ## Building
 
-All three implementations are available. The Go build is the default.
+All three implementations are available. The C build is the default.
+
+### C (raw ANSI)
+
+```sh
+cd c && make
+# or
+just build-c
+```
 
 ### Go (Bubbletea)
 
@@ -157,22 +165,19 @@ just build-go
 cd rust && cargo build --release
 ```
 
-### C (raw ANSI)
-
-```sh
-cd c && make
-```
-
 ## Installing
 
 ```sh
+# C
+just install-c
+
 # Go
 just install-go
 
 # Rust
 cp rust/target/release/slit ~/.local/bin/slit
 
-# C
+# C (manual)
 cd c && make install PREFIX=~/.local
 ```
 
@@ -200,6 +205,14 @@ slit completion zsh   > ~/.zfunc/_slit
 slit completion fish  > ~/.config/fish/completions/slit.fish
 ```
 
+## Man Pages
+
+```sh
+just man-c
+just man-go
+just man-rust
+```
+
 ## Documentation
 
 - [USAGE.md](USAGE.md) — comprehensive usage guide, config file format, all flags
@@ -207,4 +220,4 @@ slit completion fish  > ~/.config/fish/completions/slit.fish
 
 ## License
 
-MIT
+CC0-1.0

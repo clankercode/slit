@@ -80,6 +80,42 @@ static void print_version(void) {
     printf("slit %s\n", VERSION);
 }
 
+static void print_manpage(void) {
+    puts(".TH SLIT 1 \"slit 0.2.0\" \"slit\" \"User Commands\"");
+    puts(".SH NAME");
+    puts("slit \\\\- streaming terminal viewer with a fixed-height live pane");
+    puts(".SH SYNOPSIS");
+    puts(".B slit\n[OPTIONS]\n.br\n.B slit\ncompletion\nI SHELL");
+    puts(".SH DESCRIPTION");
+    puts("slit reads stdin into a fixed-height pane, trims lines to terminal width, and re-renders on each new line.");
+    puts("It renders to stderr so stdout can still be piped onward when rendering is disabled.");
+    puts(".SH OPTIONS");
+    puts(".TP\n.BR \\-n ,\\~\\-\\-lines = N\nNumber of lines to display (0 = auto).");
+    puts(".TP\n.BR \\-\\-max\\-lines = N\nMaximum number of lines to buffer.");
+    puts(".TP\n.BR \\-o ,\\~\\-\\-output = FILE\nWrite output to file (tee mode).");
+    puts(".TP\n.BR \\-a ,\\~\\-\\-append\nAppend to output file instead of overwriting.");
+    puts(".TP\n.BR \\-\\-tee\\-format = raw|display\nTee output format.");
+    puts(".TP\n.BR \\-l ,\\~\\-\\-line\\-numbers\nShow line numbers.");
+    puts(".TP\n.BR \\-\\-color = auto|always|never\nColor mode.");
+    puts(".TP\n.BR \\-w ,\\~\\-\\-wrap\nWrap long lines instead of truncating.");
+    puts(".TP\n.BR \\-t ,\\~\\-\\-timestamp\nShow timestamps.");
+    puts(".TP\n.BR \\-\\-truncation\\-char = CHAR\nCharacter used for truncation indicator.");
+    puts(".TP\n.BR \\-\\-layout = box|rounded|compact|minimal|none|quote\nLayout style.");
+    puts(".TP\n.BR \\-\\-box \\fR,\\fP \\-\\-rounded \\fR,\\fP \\-\\-compact \\fR,\\fP \\-\\-minimal \\fR,\\fP \\-\\-none \\fR,\\fP \\-\\-quote\nLayout shortcuts.");
+    puts(".TP\n.BR \\-\\-quote\\-bg = off|on\nQuote background style.");
+    puts(".TP\n.BR \\-\\-spinner = braille|dots|arrows|off\nSpinner style.");
+    puts(".TP\n.BR \\-d ,\\~\\-\\-debug\nEnable debug logging.");
+    puts(".TP\n.BR \\-\\-log\\-file = FILE\nWrite debug logs to file.");
+    puts(".TP\n.BR \\-\\-help\nShow help text.");
+    puts(".TP\n.BR \\-\\-version\nShow version information.");
+    puts(".SH COMMANDS");
+    puts(".TP\n.BI \"completion \" SHELL\nOutput shell completion script for bash, zsh, or fish.");
+    puts(".SH ENVIRONMENT");
+    puts(".TP\n.B SLIT_FORCE_RENDER=1\nForce rendering even when stderr is not a TTY.");
+    puts(".SH EXAMPLES");
+    puts(".EX\nmake build 2>&1 | slit\ntail -f /var/log/syslog | slit -n 10 -l -t\npytest tests/ | slit --box -o results.log\n.EE");
+}
+
 static struct slit_config default_config(void) {
     struct slit_config cfg;
     cfg.lines = DEFAULT_LINES;
@@ -384,6 +420,7 @@ int main(int argc, char *argv[]) {
         {"spinner", required_argument, 0, 0},
         {"debug", no_argument, 0, 'd'},
         {"log-file", required_argument, 0, 0},
+        {"generate-man", no_argument, 0, 0},
         {"help", no_argument, 0, 'h'},
         {"version", no_argument, 0, 'v'},
         {0, 0, 0, 0}
@@ -496,6 +533,10 @@ int main(int argc, char *argv[]) {
                 } else if (strcmp(long_options[option_index].name, "log-file") == 0) {
                     if (cfg.log_file) free(cfg.log_file);
                     cfg.log_file = strdup(optarg);
+                } else if (strcmp(long_options[option_index].name, "generate-man") == 0) {
+                    print_manpage();
+                    free_config(&cfg);
+                    return 0;
                 }
                 break;
             case '?':

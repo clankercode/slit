@@ -34,9 +34,9 @@ All three implementations support the same set of CLI flags:
 | `--version` | yes | yes | yes | yes |
 | `--help` | yes | yes | yes | yes |
 | `completion` subcommand | yes | yes | yes | yes |
-| `--generate-man` (hidden) | yes | yes | no | **no** |
+| `--generate-man` (hidden) | yes | yes | yes | yes |
 
-**Note:** C does not have `--generate-man`. Go and Rust both support it.
+**Note:** All three implementations support `--generate-man` as a hidden documentation/export flag.
 
 ---
 
@@ -59,7 +59,7 @@ All three implementations support the same set of CLI flags:
 | `debug` | false | false | false | yes |
 | `log_file` | (auto) | (auto) | (auto) | yes |
 | `RENDER_INTERVAL_MS` | ~33 (100ms spinner tick) | 33ms tick interval | 33ms poll | yes |
-| `version` | 0.1.0 | 0.1.0 | 0.1.0 | yes |
+| `version` | 0.2.0 | 0.2.0 | 0.2.0 | yes |
 
 All defaults are consistent across implementations.
 
@@ -143,10 +143,9 @@ All three show a final "Done" status and wait briefly before exiting (~200ms).
 ## Intentional Differences
 
 1. **C has no config file support** — adding a TOML parser in C is not worth the complexity
-2. **C has no `--generate-man`** — man page generation is handled by Go and Rust which have mature doc generators
-3. **C accepts `Q` (uppercase)** — raw terminal reads both cases; Go/Rust frameworks normalize
-4. **Rust does not explicitly handle SIGTSTP** — relies on crossterm behavior
-5. **Go uses Bubbletea's 100ms spinner tick** vs C/Rust using 33ms intervals — visual result is equivalent since spinner increments are timed
+2. **C accepts `Q` (uppercase)** — raw terminal reads both cases; Go/Rust frameworks normalize
+3. **Rust does not explicitly handle SIGTSTP** — relies on crossterm behavior
+4. **Go uses Bubbletea's 100ms spinner tick** vs C/Rust using 33ms intervals — visual result is equivalent since spinner increments are timed
 
 ---
 
