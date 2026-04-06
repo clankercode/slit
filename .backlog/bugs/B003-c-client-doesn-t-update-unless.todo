@@ -1,0 +1,12 @@
+---
+complexity: medium
+depends_on: []
+estimate_hours: 1
+id: B003
+priority: high
+status: pending
+tags: []
+title: c client doesn't update unless stdin updates, it should always update though even if nothing is being written to stdin. (same for rust and go, didn't check those)
+---
+
+c client doesn't update unless stdin updates, it should always update though even if nothing is being written to stdin. (same for rust and go, didn't check those)
