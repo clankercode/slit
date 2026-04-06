@@ -1,0 +1,435 @@
+{
+  "timestamp": "2026-04-06T21:20:55.027991",
+  "total": 24,
+  "passed": 0,
+  "differences": 24,
+  "errors": 0,
+  "diffs": [
+    {
+      "test": "plain_text",
+      "impl_a": "go",
+      "impl_b": "rust",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "plain_text",
+      "impl_a": "go",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "plain_text",
+      "impl_a": "rust",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "long_lines",
+      "impl_a": "go",
+      "impl_b": "rust",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "long_lines",
+      "impl_a": "go",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "long_lines",
+      "impl_a": "rust",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "ansi_colors",
+      "impl_a": "go",
+      "impl_b": "rust",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "ansi_colors",
+      "impl_a": "go",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "ansi_colors",
+      "impl_a": "rust",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "empty_lines",
+      "impl_a": "go",
+      "impl_b": "rust",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "empty_lines",
+      "impl_a": "go",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "empty_lines",
+      "impl_a": "rust",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "very_long_ansi",
+      "impl_a": "go",
+      "impl_b": "rust",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "very_long_ansi",
+      "impl_a": "go",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "very_long_ansi",
+      "impl_a": "rust",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "rapid_input",
+      "impl_a": "go",
+      "impl_b": "rust",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "rapid_input",
+      "impl_a": "go",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "rapid_input",
+      "impl_a": "rust",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "unicode_content",
+      "impl_a": "go",
+      "impl_b": "rust",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "unicode_content",
+      "impl_a": "go",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "unicode_content",
+      "impl_a": "rust",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "binary_ish_content",
+      "impl_a": "go",
+      "impl_b": "rust",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "binary_ish_content",
+      "impl_a": "go",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "binary_ish_content",
+      "impl_a": "rust",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "wrap_mode",
+      "impl_a": "go",
+      "impl_b": "rust",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "wrap_mode",
+      "impl_a": "go",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "wrap_mode",
+      "impl_a": "rust",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "layout_box",
+      "impl_a": "go",
+      "impl_b": "rust",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "layout_box",
+      "impl_a": "go",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "layout_box",
+      "impl_a": "rust",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "layout_rounded",
+      "impl_a": "go",
+      "impl_b": "rust",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "layout_rounded",
+      "impl_a": "go",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "layout_rounded",
+      "impl_a": "rust",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "layout_compact",
+      "impl_a": "go",
+      "impl_b": "rust",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "layout_compact",
+      "impl_a": "go",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "layout_compact",
+      "impl_a": "rust",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "layout_minimal",
+      "impl_a": "go",
+      "impl_b": "rust",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "layout_minimal",
+      "impl_a": "go",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "layout_minimal",
+      "impl_a": "rust",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "layout_none",
+      "impl_a": "go",
+      "impl_b": "rust",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "layout_none",
+      "impl_a": "go",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "layout_quote",
+      "impl_a": "go",
+      "impl_b": "rust",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "layout_quote",
+      "impl_a": "go",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "layout_quote",
+      "impl_a": "rust",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "line_numbers",
+      "impl_a": "go",
+      "impl_b": "rust",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "line_numbers",
+      "impl_a": "go",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "line_numbers",
+      "impl_a": "rust",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "timestamps",
+      "impl_a": "go",
+      "impl_b": "rust",
+      "description": "Output differs (content mode)"
+    },
+    {
+      "test": "timestamps",
+      "impl_a": "go",
+      "impl_b": "c",
+      "description": "Output differs (content mode)"
+    },
+    {
+      "test": "timestamps",
+      "impl_a": "rust",
+      "impl_b": "c",
+      "description": "Output differs (content mode)"
+    },
+    {
+      "test": "color_always",
+      "impl_a": "go",
+      "impl_b": "rust",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "color_always",
+      "impl_a": "go",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "color_always",
+      "impl_a": "rust",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "color_never",
+      "impl_a": "go",
+      "impl_b": "rust",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "color_never",
+      "impl_a": "go",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "color_never",
+      "impl_a": "rust",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "ring_buffer_overflow",
+      "impl_a": "go",
+      "impl_b": "rust",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "ring_buffer_overflow",
+      "impl_a": "go",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "ring_buffer_overflow",
+      "impl_a": "rust",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "mixed_ansi",
+      "impl_a": "go",
+      "impl_b": "rust",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "mixed_ansi",
+      "impl_a": "go",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "mixed_ansi",
+      "impl_a": "rust",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "cjk_width",
+      "impl_a": "go",
+      "impl_b": "rust",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "cjk_width",
+      "impl_a": "go",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "cjk_width",
+      "impl_a": "rust",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "truncation",
+      "impl_a": "go",
+      "impl_b": "rust",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "truncation",
+      "impl_a": "go",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "truncation",
+      "impl_a": "rust",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "combined_flags",
+      "impl_a": "go",
+      "impl_b": "rust",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "combined_flags",
+      "impl_a": "go",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    },
+    {
+      "test": "combined_flags",
+      "impl_a": "rust",
+      "impl_b": "c",
+      "description": "Output differs (normalized mode)"
+    }
+  ]
+}

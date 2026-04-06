@@ -1,0 +1,903 @@
+Cross-Implementation Test Report: 2026-04-06T21:20:55.027550
+Test cases: 24, Passed: 0, Differences: 24, Errors: 0
+============================================================
+
+DIFFERENCES FOUND:
+
+  DIFFERENCE: go vs rust
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | hello world
+  | line two
+  | line three
+  --- rust output ---
+  | hello world
+  | line two
+  | line three
+  | Done. (N lines)  q:quit
+----------------------------------------
+  DIFFERENCE: go vs c
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | hello world
+  | line two
+  | line three
+  --- c output ---
+  | hello world
+  | Done. (N lines, NB)                                                      q:quit
+----------------------------------------
+  DIFFERENCE: rust vs c
+  Description: Output differs (normalized mode)
+  --- rust output ---
+  | hello world
+  | line two
+  | line three
+  | Done. (N lines)  q:quit
+  --- c output ---
+  | hello world
+  | Done. (N lines, NB)                                                      q:quit
+----------------------------------------
+  DIFFERENCE: go vs rust
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA…
+  | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA…
+  | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA…
+  | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA…
+  | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA…
+  --- rust output ---
+  | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA…
+  | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA…
+  | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA…
+  | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA…
+  | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA…
+  | Done. (N lines)  q:quit
+----------------------------------------
+  DIFFERENCE: go vs c
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA…
+  | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA…
+  | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA…
+  | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA…
+  | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA…
+  --- c output ---
+  | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA…
+  | Done. (N lines, NB)                                                     q:quit
+----------------------------------------
+  DIFFERENCE: rust vs c
+  Description: Output differs (normalized mode)
+  --- rust output ---
+  | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA…
+  | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA…
+  | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA…
+  | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA…
+  | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA…
+  | Done. (N lines)  q:quit
+  --- c output ---
+  | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA…
+  | Done. (N lines, NB)                                                     q:quit
+----------------------------------------
+  DIFFERENCE: go vs rust
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | red text
+  | 256-color text
+  | 24-bit color text
+  | green normal blue
+  --- rust output ---
+  | [31mred text[0m
+  | [38;5;202m256-color text[0m
+  | [38;2;255;128;0m24-bit color text[0m
+  | [32mgreen[0m normal [34mblue[0m
+  | Done. (N lines)  q:quit
+----------------------------------------
+  DIFFERENCE: go vs c
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | red text
+  | 256-color text
+  | 24-bit color text
+  | green normal blue
+  --- c output ---
+  | red text
+  | Done. (N lines, NB)                                                      q:quit
+----------------------------------------
+  DIFFERENCE: rust vs c
+  Description: Output differs (normalized mode)
+  --- rust output ---
+  | [31mred text[0m
+  | [38;5;202m256-color text[0m
+  | [38;2;255;128;0m24-bit color text[0m
+  | [32mgreen[0m normal [34mblue[0m
+  | Done. (N lines)  q:quit
+  --- c output ---
+  | red text
+  | Done. (N lines, NB)                                                      q:quit
+----------------------------------------
+  DIFFERENCE: go vs rust
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | content after empties
+  --- rust output ---
+  | content after empties
+  | Done. (N lines)  q:quit
+----------------------------------------
+  DIFFERENCE: go vs c
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | content after empties
+  --- c output ---
+  | Done. (N lines, NB)                                                       q:quit
+----------------------------------------
+  DIFFERENCE: rust vs c
+  Description: Output differs (normalized mode)
+  --- rust output ---
+  | content after empties
+  | Done. (N lines)  q:quit
+  --- c output ---
+  | Done. (N lines, NB)                                                       q:quit
+----------------------------------------
+  DIFFERENCE: go vs rust
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX…
+  --- rust output ---
+  | [31mXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  | Done. (N lines)  q:quit
+----------------------------------------
+  DIFFERENCE: go vs c
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX…
+  --- c output ---
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX…
+  | Done. (N lines, NB)                                                    q:quit
+----------------------------------------
+  DIFFERENCE: rust vs c
+  Description: Output differs (normalized mode)
+  --- rust output ---
+  | [31mXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  | Done. (N lines)  q:quit
+  --- c output ---
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX…
+  | Done. (N lines, NB)                                                    q:quit
+----------------------------------------
+  DIFFERENCE: go vs rust
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | rapid line 77
+  | rapid line 78
+  | rapid line 79
+  | rapid line 80
+  | rapid line 81
+  | rapid line 82
+  | rapid line 83
+  | rapid line 84
+  | rapid line 85
+  | rapid line 86
+  | rapid line 87
+  | rapid line 88
+  | rapid line 89
+  | rapid line 90
+  | rapid line 91
+  | rapid line 92
+  | rapid line 93
+  | rapid line 94
+  | rapid line 95
+  | rapid line 96
+  | ... (2 more lines)
+  --- rust output ---
+  | rapid line 77
+  | rapid line 78
+  | rapid line 79
+  | rapid line 80
+  | rapid line 81
+  | rapid line 82
+  | rapid line 83
+  | rapid line 84
+  | rapid line 85
+  | rapid line 86
+  | rapid line 87
+----------------------------------------
+  DIFFERENCE: go vs c
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | rapid line 77
+  | rapid line 78
+  | rapid line 79
+  | rapid line 80
+  | rapid line 81
+  | rapid line 82
+  | rapid line 83
+  | rapid line 84
+  | rapid line 85
+  | rapid line 86
+  | rapid line 87
+  | rapid line 88
+  | rapid line 89
+  | rapid line 90
+  | rapid line 91
+  | rapid line 92
+  | rapid line 93
+  | rapid line 94
+  | rapid line 95
+  | rapid line 96
+  | ... (2 more lines)
+  --- c output ---
+  | rapid line 0
+  | Done. (N lines, NB)                                                      q:quit
+----------------------------------------
+  DIFFERENCE: rust vs c
+  Description: Output differs (normalized mode)
+  --- rust output ---
+  | rapid line 77
+  | rapid line 78
+  | rapid line 79
+  | rapid line 80
+  | rapid line 81
+  | rapid line 82
+  | rapid line 83
+  | rapid line 84
+  | rapid line 85
+  | rapid line 86
+  | rapid line 87
+  --- c output ---
+  | rapid line 0
+  | Done. (N lines, NB)                                                      q:quit
+----------------------------------------
+  DIFFERENCE: go vs rust
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | Hello 世界
+  | こんにちは
+  | 한국어 테스트
+  | 🎉🚀💻✨
+  | Mixed: café résumé naïve
+  | العربية
+  | Привет мир
+  --- rust output ---
+  | Hello 世 界
+  | こ ん に ち は
+  | 한 국 어  테 스 트
+  | 🎉 🚀 💻 ✨
+  | Mixed: café résumé naïve
+  | العربية
+  | Привет мир
+  | Done. (N lines)  q:quit
+----------------------------------------
+  DIFFERENCE: go vs c
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | Hello 世界
+  | こんにちは
+  | 한국어 테스트
+  | 🎉🚀💻✨
+  | Mixed: café résumé naïve
+  | العربية
+  | Привет мир
+  --- c output ---
+  | Hello 世界
+  | Done. (N lines, NB)                                                      q:quit
+----------------------------------------
+  DIFFERENCE: rust vs c
+  Description: Output differs (normalized mode)
+  --- rust output ---
+  | Hello 世 界
+  | こ ん に ち は
+  | 한 국 어  테 스 트
+  | 🎉 🚀 💻 ✨
+  | Mixed: café résumé naïve
+  | العربية
+  | Привет мир
+  | Done. (N lines)  q:quit
+  --- c output ---
+  | Hello 世界
+  | Done. (N lines, NB)                                                      q:quit
+----------------------------------------
+  DIFFERENCE: go vs rust
+  Description: Output differs (normalized mode)
+  --- go output ---
+  |  text between control chars ��������������������������������
+  --- rust output ---
+  | Done. (N lines)  q:quit
+----------------------------------------
+  DIFFERENCE: go vs c
+  Description: Output differs (normalized mode)
+  --- go output ---
+  |  text between control chars ��������������������������������
+  --- c output ---
+  | Done. (N lines, NB)                                                       q:quit
+----------------------------------------
+  DIFFERENCE: rust vs c
+  Description: Output differs (normalized mode)
+  --- rust output ---
+  | Done. (N lines)  q:quit
+  --- c output ---
+  | Done. (N lines, NB)                                                       q:quit
+----------------------------------------
+  DIFFERENCE: go vs rust
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  --- rust output ---
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  | Done. (N lines)  q:quit
+----------------------------------------
+  DIFFERENCE: go vs c
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  --- c output ---
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  | Done. (N lines, NB)                                                     q:quit
+----------------------------------------
+  DIFFERENCE: rust vs c
+  Description: Output differs (normalized mode)
+  --- rust output ---
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  | Done. (N lines)  q:quit
+  --- c output ---
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  | XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  | Done. (N lines, NB)                                                     q:quit
+----------------------------------------
+  DIFFERENCE: go vs rust
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | ┌ slit ────────────────────────────────────────────────────────────────────────┐
+  | │ layout test line                                                             │
+  --- rust output ---
+  | ┌ slit ────────────────────────────────────────────────────────────────────────┐
+  | │ layout test line                                                             │
+  | └ Done. (N lines)  q:quit                                                      ┘
+----------------------------------------
+  DIFFERENCE: go vs c
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | ┌ slit ────────────────────────────────────────────────────────────────────────┐
+  | │ layout test line                                                             │
+  --- c output ---
+  | ┌ slit ────────────────────────────────────────────────────────────────────────┐
+  | │ layout test line                                                             │
+  | └ Done. (N lines, NB)                                                  q:quit ┘
+----------------------------------------
+  DIFFERENCE: rust vs c
+  Description: Output differs (normalized mode)
+  --- rust output ---
+  | ┌ slit ────────────────────────────────────────────────────────────────────────┐
+  | │ layout test line                                                             │
+  | └ Done. (N lines)  q:quit                                                      ┘
+  --- c output ---
+  | ┌ slit ────────────────────────────────────────────────────────────────────────┐
+  | │ layout test line                                                             │
+  | └ Done. (N lines, NB)                                                  q:quit ┘
+----------------------------------------
+  DIFFERENCE: go vs rust
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | ╭ slit ────────────────────────────────────────────────────────────────────────╮
+  | │ layout test line                                                             │
+  --- rust output ---
+  | ╭ slit ────────────────────────────────────────────────────────────────────────╮
+  | │ layout test line                                                             │
+  | ╰ Done. (N lines)  q:quit                                                      ╯
+----------------------------------------
+  DIFFERENCE: go vs c
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | ╭ slit ────────────────────────────────────────────────────────────────────────╮
+  | │ layout test line                                                             │
+  --- c output ---
+  | ╭ slit ────────────────────────────────────────────────────────────────────────╮
+  | │ layout test line                                                             │
+  | ╰ Done. (N lines, NB)                                                  q:quit ╯
+----------------------------------------
+  DIFFERENCE: rust vs c
+  Description: Output differs (normalized mode)
+  --- rust output ---
+  | ╭ slit ────────────────────────────────────────────────────────────────────────╮
+  | │ layout test line                                                             │
+  | ╰ Done. (N lines)  q:quit                                                      ╯
+  --- c output ---
+  | ╭ slit ────────────────────────────────────────────────────────────────────────╮
+  | │ layout test line                                                             │
+  | ╰ Done. (N lines, NB)                                                  q:quit ╯
+----------------------------------------
+  DIFFERENCE: go vs rust
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | slit
+  | layout test line
+  --- rust output ---
+  | [48;5;239m[37;1mslit
+  | layout test line
+  | Done. (N lines)  q:quit
+----------------------------------------
+  DIFFERENCE: go vs c
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | slit
+  | layout test line
+  --- c output ---
+  | lit
+  | layout test line
+  | Done. (N lines, NB)                                                      q:quit
+----------------------------------------
+  DIFFERENCE: rust vs c
+  Description: Output differs (normalized mode)
+  --- rust output ---
+  | [48;5;239m[37;1mslit
+  | layout test line
+  | Done. (N lines)  q:quit
+  --- c output ---
+  | lit
+  | layout test line
+  | Done. (N lines, NB)                                                      q:quit
+----------------------------------------
+  DIFFERENCE: go vs rust
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | layout test line
+  --- rust output ---
+  | layout test line
+  | Done. (N lines)  q:quit
+----------------------------------------
+  DIFFERENCE: go vs c
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | layout test line
+  --- c output ---
+  | layout test line
+  | Done. (N lines, NB)                                                      q:quit
+----------------------------------------
+  DIFFERENCE: rust vs c
+  Description: Output differs (normalized mode)
+  --- rust output ---
+  | layout test line
+  | Done. (N lines)  q:quit
+  --- c output ---
+  | layout test line
+  | Done. (N lines, NB)                                                      q:quit
+----------------------------------------
+  DIFFERENCE: go vs rust
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | 
+  --- rust output ---
+  | layout test line
+----------------------------------------
+  DIFFERENCE: go vs c
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | 
+  --- c output ---
+  | layout test line
+----------------------------------------
+  DIFFERENCE: go vs rust
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | ▌ slit
+  | ▌ layout test line
+  --- rust output ---
+  | [34m▌[0m slit
+  | [34m▌[0m layout test line
+  | [34m▌[0m Done. (N lines)  q:quit
+----------------------------------------
+  DIFFERENCE: go vs c
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | ▌ slit
+  | ▌ layout test line
+  --- c output ---
+  | ▌ slit
+  | ▌ layout test line
+  | ▌ Done. (N lines, NB)                                                    q:quit
+----------------------------------------
+  DIFFERENCE: rust vs c
+  Description: Output differs (normalized mode)
+  --- rust output ---
+  | [34m▌[0m slit
+  | [34m▌[0m layout test line
+  | [34m▌[0m Done. (N lines)  q:quit
+  --- c output ---
+  | ▌ slit
+  | ▌ layout test line
+  | ▌ Done. (N lines, NB)                                                    q:quit
+----------------------------------------
+  DIFFERENCE: go vs rust
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | 1 first
+  | 2 second
+  | 3 third
+  --- rust output ---
+  | 1 first
+  | 2 second
+  | 3 third
+  | Done. (N lines)  q:quit
+----------------------------------------
+  DIFFERENCE: go vs c
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | 1 first
+  | 2 second
+  | 3 third
+  --- c output ---
+  | 1 first
+  | Done. (N lines, NB)                                                       q:quit
+----------------------------------------
+  DIFFERENCE: rust vs c
+  Description: Output differs (normalized mode)
+  --- rust output ---
+  | 1 first
+  | 2 second
+  | 3 third
+  | Done. (N lines)  q:quit
+  --- c output ---
+  | 1 first
+  | Done. (N lines, NB)                                                       q:quit
+----------------------------------------
+  DIFFERENCE: go vs rust
+  Description: Output differs (content mode)
+  --- go output ---
+  |  timestamped line
+  --- rust output ---
+  |  timestamped line
+  | Done. ()  q:quit
+----------------------------------------
+  DIFFERENCE: go vs c
+  Description: Output differs (content mode)
+  --- go output ---
+  |  timestamped line
+  --- c output ---
+  |  timestamped line
+  | Done. (, )                                                      q:quit
+----------------------------------------
+  DIFFERENCE: rust vs c
+  Description: Output differs (content mode)
+  --- rust output ---
+  |  timestamped line
+  | Done. ()  q:quit
+  --- c output ---
+  |  timestamped line
+  | Done. (, )                                                      q:quit
+----------------------------------------
+  DIFFERENCE: go vs rust
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | colored
+  --- rust output ---
+  | [31mcolored[0m
+  | Done. (N lines)  q:quit
+----------------------------------------
+  DIFFERENCE: go vs c
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | colored
+  --- c output ---
+  | colored
+  | Done. (N lines, NB)                                                      q:quit
+----------------------------------------
+  DIFFERENCE: rust vs c
+  Description: Output differs (normalized mode)
+  --- rust output ---
+  | [31mcolored[0m
+  | Done. (N lines)  q:quit
+  --- c output ---
+  | colored
+  | Done. (N lines, NB)                                                      q:quit
+----------------------------------------
+  DIFFERENCE: go vs rust
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | colored
+  --- rust output ---
+  | colored
+  | Done. (N lines)  q:quit
+----------------------------------------
+  DIFFERENCE: go vs c
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | colored
+  --- c output ---
+  | colored
+  | Done. (N lines, NB)                                                      q:quit
+----------------------------------------
+  DIFFERENCE: rust vs c
+  Description: Output differs (normalized mode)
+  --- rust output ---
+  | colored
+  | Done. (N lines)  q:quit
+  --- c output ---
+  | colored
+  | Done. (N lines, NB)                                                      q:quit
+----------------------------------------
+  DIFFERENCE: go vs rust
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | buffer line 1977
+  | buffer line 1978
+  | buffer line 1979
+  | buffer line 1980
+  | buffer line 1981
+  | buffer line 1982
+  | buffer line 1983
+  | buffer line 1984
+  | buffer line 1985
+  | buffer line 1986
+  | buffer line 1987
+  | buffer line 1988
+  | buffer line 1989
+  | buffer line 1990
+  | buffer line 1991
+  | buffer line 1992
+  | buffer line 1993
+  | buffer line 1994
+  | buffer line 1995
+  | buffer line 1996
+  | ... (2 more lines)
+  --- rust output ---
+  | buffer line 1977
+  | buffer line 1978
+  | buffer line 1979
+  | buffer line 1980
+  | buffer line 1981
+  | buffer line 1982
+  | buffer line 1983
+  | buffer line 1984
+  | buffer line 1985
+  | buffer line 1986
+  | buffer line 1987
+----------------------------------------
+  DIFFERENCE: go vs c
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | buffer line 1977
+  | buffer line 1978
+  | buffer line 1979
+  | buffer line 1980
+  | buffer line 1981
+  | buffer line 1982
+  | buffer line 1983
+  | buffer line 1984
+  | buffer line 1985
+  | buffer line 1986
+  | buffer line 1987
+  | buffer line 1988
+  | buffer line 1989
+  | buffer line 1990
+  | buffer line 1991
+  | buffer line 1992
+  | buffer line 1993
+  | buffer line 1994
+  | buffer line 1995
+  | buffer line 1996
+  | ... (2 more lines)
+  --- c output ---
+  | buffer line 1906
+  | buffer line 1907
+  | buffer line 1908
+  | buffer line 1909
+  | buffer line 1910
+  | buffer line 1911
+  | buffer line 1912
+  | buffer line 1913
+  | buffer line 1914
+  | buffer line 1915
+  | buffer line 1916
+  | buffer line 1917
+  | buffer line 1918
+  | buffer line 1919
+  | buffer line 1920
+  | buffer line 1921
+  | buffer line 1922
+  | buffer line 1923
+  | buffer line 1924
+  | buffer line 1925
+  | ... (2 more lines)
+----------------------------------------
+  DIFFERENCE: rust vs c
+  Description: Output differs (normalized mode)
+  --- rust output ---
+  | buffer line 1977
+  | buffer line 1978
+  | buffer line 1979
+  | buffer line 1980
+  | buffer line 1981
+  | buffer line 1982
+  | buffer line 1983
+  | buffer line 1984
+  | buffer line 1985
+  | buffer line 1986
+  | buffer line 1987
+  --- c output ---
+  | buffer line 1906
+  | buffer line 1907
+  | buffer line 1908
+  | buffer line 1909
+  | buffer line 1910
+  | buffer line 1911
+  | buffer line 1912
+  | buffer line 1913
+  | buffer line 1914
+  | buffer line 1915
+  | buffer line 1916
+  | buffer line 1917
+  | buffer line 1918
+  | buffer line 1919
+  | buffer line 1920
+  | buffer line 1921
+  | buffer line 1922
+  | buffer line 1923
+  | buffer line 1924
+  | buffer line 1925
+  | ... (2 more lines)
+----------------------------------------
+  DIFFERENCE: go vs rust
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | nested after reset
+  | double
+  | incomplete[31
+  | reverse
+  | fg+bg
+  | multi-attr
+  --- rust output ---
+  | [1m[31mnested[0m after reset
+  | [32m[4mdouble[0m
+  | incomplete[31
+  | [7mreverse[0m
+  | [38;5;200m[48;5;17mfg+bg[0m
+  | [1;3;4;31m[1mmulti-attr[0m
+  | Done. (N lines)  q:quit
+----------------------------------------
+  DIFFERENCE: go vs c
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | nested after reset
+  | double
+  | incomplete[31
+  | reverse
+  | fg+bg
+  | multi-attr
+  --- c output ---
+  | nested after reset
+  | Done. (N lines, NB)                                                      q:quit
+----------------------------------------
+  DIFFERENCE: rust vs c
+  Description: Output differs (normalized mode)
+  --- rust output ---
+  | [1m[31mnested[0m after reset
+  | [32m[4mdouble[0m
+  | incomplete[31
+  | [7mreverse[0m
+  | [38;5;200m[48;5;17mfg+bg[0m
+  | [1;3;4;31m[1mmulti-attr[0m
+  | Done. (N lines)  q:quit
+  --- c output ---
+  | nested after reset
+  | Done. (N lines, NB)                                                      q:quit
+----------------------------------------
+  DIFFERENCE: go vs rust
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | 全角文字テスト
+  | ＡＢＣＤ全角英数
+  | ┌──────────┐
+  | │ box drawing │
+  | └──────────┘
+  --- rust output ---
+  | 全 角 文 字 テ ス ト
+  | Ａ Ｂ Ｃ Ｄ 全 角 英 数
+  | ┌──────────┐
+  | │ box drawing │
+  | └──────────┘
+  | Done. (N lines)  q:quit
+----------------------------------------
+  DIFFERENCE: go vs c
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | 全角文字テスト
+  | ＡＢＣＤ全角英数
+  | ┌──────────┐
+  | │ box drawing │
+  | └──────────┘
+  --- c output ---
+  | 全角文字テスト
+  | Done. (N lines, NB)                                                      q:quit
+----------------------------------------
+  DIFFERENCE: rust vs c
+  Description: Output differs (normalized mode)
+  --- rust output ---
+  | 全 角 文 字 テ ス ト
+  | Ａ Ｂ Ｃ Ｄ 全 角 英 数
+  | ┌──────────┐
+  | │ box drawing │
+  | └──────────┘
+  | Done. (N lines)  q:quit
+  --- c output ---
+  | 全角文字テスト
+  | Done. (N lines, NB)                                                      q:quit
+----------------------------------------
+  DIFFERENCE: go vs rust
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY~
+  --- rust output ---
+  | YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY~
+  | Done. (N lines)  q:quit
+----------------------------------------
+  DIFFERENCE: go vs c
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY~
+  --- c output ---
+  | YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY~
+  | Done. (N lines, NB)                                                     q:quit
+----------------------------------------
+  DIFFERENCE: rust vs c
+  Description: Output differs (normalized mode)
+  --- rust output ---
+  | YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY~
+  | Done. (N lines)  q:quit
+  --- c output ---
+  | YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY~
+  | Done. (N lines, NB)                                                     q:quit
+----------------------------------------
+  DIFFERENCE: go vs rust
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | slit
+  | 1 hello world
+  | N lines 2
+  | N lines 3
+  --- rust output ---
+  | [48;5;239m[37;1mslit
+  | 1 [32mhello[0m world
+  | N lines 2
+  | N lines 3
+  | Done. (N lines)  q:quit
+----------------------------------------
+  DIFFERENCE: go vs c
+  Description: Output differs (normalized mode)
+  --- go output ---
+  | slit
+  | 1 hello world
+  | N lines 2
+  | N lines 3
+  --- c output ---
+  | lit
+  | 1 hello world
+  | Done. (N lines, NB)                                                      q:quit
+----------------------------------------
+  DIFFERENCE: rust vs c
+  Description: Output differs (normalized mode)
+  --- rust output ---
+  | [48;5;239m[37;1mslit
+  | 1 [32mhello[0m world
+  | N lines 2
+  | N lines 3
+  | Done. (N lines)  q:quit
+  --- c output ---
+  | lit
+  | 1 hello world
+  | Done. (N lines, NB)                                                      q:quit
+----------------------------------------
