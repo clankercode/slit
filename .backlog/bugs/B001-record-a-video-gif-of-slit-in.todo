@@ -1,0 +1,11 @@
+---
+complexity: medium
+depends_on: []
+estimate_hours: 1
+id: B001
+priority: high
+status: pending
+tags: []
+title: Record a video/GIF of slit in action for the README
+---
+Capture an asciinema recording or terminal GIF showing slit streaming live output in the default minimal layout, then embed it in the README for visual impact.
