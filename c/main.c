@@ -563,9 +563,10 @@ int main(int argc, char *argv[]) {
     struct layout_chrome chrome = layout_get_chrome(cfg.layout);
     int content_lines;
     if (cfg.lines <= 0) {
-        int auto_h = term_rows * 2 / 3;
-        if (auto_h < 10) auto_h = 10;
-        content_lines = auto_h - chrome.top_lines - chrome.bottom_lines;
+        int available = term_rows - chrome.top_lines - chrome.bottom_lines;
+        if (available < 1) available = 1;
+        content_lines = available * 2 / 3;
+        if (content_lines < 10) content_lines = 10;
     } else {
         content_lines = cfg.lines;
     }
@@ -595,10 +596,10 @@ int main(int argc, char *argv[]) {
             debug_log("SIGWINCH received");
             term_get_size(tty_fd, &term_rows, &term_cols);
             if (cfg.lines <= 0) {
-                int auto_h = term_rows * 2 / 3;
-                if (auto_h < 10) auto_h = 10;
-                content_lines = auto_h - chrome.top_lines - chrome.bottom_lines;
-                if (content_lines < 1) content_lines = 1;
+                int available = term_rows - chrome.top_lines - chrome.bottom_lines;
+                if (available < 1) available = 1;
+                content_lines = available * 2 / 3;
+                if (content_lines < 10) content_lines = 10;
             }
             dirty = 1;
         }
@@ -612,10 +613,10 @@ int main(int argc, char *argv[]) {
             if (cfg.layout != LAYOUT_NONE) term_set_title("slit");
             term_get_size(tty_fd, &term_rows, &term_cols);
             if (cfg.lines <= 0) {
-                int auto_h = term_rows * 2 / 3;
-                if (auto_h < 10) auto_h = 10;
-                content_lines = auto_h - chrome.top_lines - chrome.bottom_lines;
-                if (content_lines < 1) content_lines = 1;
+                int available = term_rows - chrome.top_lines - chrome.bottom_lines;
+                if (available < 1) available = 1;
+                content_lines = available * 2 / 3;
+                if (content_lines < 10) content_lines = 10;
             }
             dirty = 1;
         }
