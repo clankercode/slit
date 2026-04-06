@@ -33,5 +33,9 @@ completions: build
     ./go/slit completion zsh > completions/_slit
     ./go/slit completion fish > completions/slit.fish
 
+install-go: build-go
+    mkdir -p ~/.local/bin
+    cp go/slit ~/.local/bin/slit
+
 man: build
     ./go/slit --generate-man > slit.1

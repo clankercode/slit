@@ -146,6 +146,12 @@ just build          # all three
 just build-go       # go only
 ```
 
+## Installing
+
+```sh
+just install-go     # builds and copies to ~/.local/bin
+```
+
 > [!NOTE]
 > Requires [just](https://github.com/casey/just).
 
