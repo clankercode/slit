@@ -3,12 +3,16 @@ use clap_complete::{generate, shells::*};
 use std::io;
 use std::path::PathBuf;
 
+pub mod config;
+
+use config::Config;
+
 #[derive(Parser)]
 #[command(name = "slit")]
 #[command(about = "A streaming terminal viewer")]
 #[command(long_about = "slit reads stdin into a fixed-height pane, trims lines to terminal width, and re-renders on each new line.")]
 #[command(version)]
-struct Cli {
+pub struct Cli {
     #[arg(short = 'n', long, help = "Number of lines to display (0 = auto/terminal height - 1)")]
     lines: Option<usize>,
 
@@ -89,27 +93,27 @@ enum Commands {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-enum Shell {
+pub enum Shell {
     Bash,
     Zsh,
     Fish,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-enum TeeFormat {
+pub enum TeeFormat {
     Raw,
     Display,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-enum ColorMode {
+pub enum ColorMode {
     Auto,
     Always,
     Never,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-enum LayoutType {
+pub enum LayoutType {
     Box,
     Rounded,
     Compact,
@@ -119,13 +123,13 @@ enum LayoutType {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-enum QuoteBg {
+pub enum QuoteBg {
     Off,
     On,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-enum SpinnerStyle {
+pub enum SpinnerStyle {
     Braille,
     Dots,
     Arrows,
@@ -149,8 +153,9 @@ async fn main() -> anyhow::Result<()> {
         None => {}
     }
 
-    println!("slit initialized with layout: {:?}", cli.layout);
-    println!("lines: {:?}, max_lines: {}", cli.lines, cli.max_lines);
+    // Load and resolve configuration
+    let config = Config::resolve(&cli)?;
+    println!("slit initialized with config: {:?}", config);
     
     Ok(())
 }
