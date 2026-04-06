@@ -198,6 +198,7 @@ impl App {
                     if !self.eof && self.tick_count.is_multiple_of(10) {
                         self.spinner_frame += 1;
                     }
+                    self.dirty = true;
                     if self.needs_reinit {
                         let new_h = self.viewport_height();
                         drop(terminal);

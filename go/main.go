@@ -72,7 +72,7 @@ var rootCmd = &cobra.Command{
 
 		m := newModel(cfg)
 
-		p := tea.NewProgram(m, tea.WithOutput(os.Stderr))
+		p := tea.NewProgram(m, tea.WithOutput(os.Stderr), tea.WithInputTTY())
 
 		go func() {
 			scanner := bufio.NewScanner(os.Stdin)

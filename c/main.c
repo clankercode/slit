@@ -665,7 +665,8 @@ int main(int argc, char *argv[]) {
         }
 
         int force_render_now = eof_reached || sigwinch_flag || sigtstp_flag;
-        if (dirty || eof_reached) {
+        int timer_expired = (ret == 0);
+        if (dirty || eof_reached || timer_expired) {
             struct timespec now;
             clock_gettime(CLOCK_MONOTONIC, &now);
             long elapsed_ms = (now.tv_sec - last_render_time.tv_sec) * 1000L +
