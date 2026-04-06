@@ -28,6 +28,7 @@ type model struct {
 	contentLines int
 	eof          bool
 	spinnerFrame int
+	spinnerTick  int
 	fileSize     int64
 	isStderrTTY  bool
 	teeWriter    *TeeWriter
@@ -88,7 +89,7 @@ func (m model) Init() tea.Cmd {
 }
 
 func tickSpinner() tea.Cmd {
-	return tea.Tick(100*time.Millisecond, func(t time.Time) tea.Msg {
+	return tea.Tick(10*time.Millisecond, func(t time.Time) tea.Msg {
 		return spinnerTickMsg(t)
 	})
 }
@@ -135,7 +136,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.eof {
 			return m, nil
 		}
-		m.spinnerFrame++
+		m.spinnerTick++
+		if m.spinnerTick%10 == 0 {
+			m.spinnerFrame++
+		}
 		for _, entry := range m.pendingLines {
 			m.buf.Push(entry.Text)
 		}
