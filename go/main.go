@@ -69,17 +69,16 @@ var rootCmd = &cobra.Command{
 			return
 		}
 
-		m := model{
-			cfg: cfg,
-			buf: NewRingBuffer(cfg.MaxLines),
-		}
+		m := newModel(cfg)
 
-		p := tea.NewProgram(m)
+		p := tea.NewProgram(m, tea.WithOutput(os.Stderr))
 
 		go func() {
 			scanner := bufio.NewScanner(os.Stdin)
 			for scanner.Scan() {
-				p.Send(lineMsg(scanner.Text()))
+				line := scanner.Text()
+				os.Stdout.WriteString(line + "\n")
+				p.Send(lineMsg(line))
 			}
 			p.Send(eofMsg{})
 		}()
@@ -88,6 +87,8 @@ var rootCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(1)
 		}
+
+		os.Stderr.WriteString("\x1b]0;\x07")
 	},
 }
 

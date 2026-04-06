@@ -1,6 +1,8 @@
 package main
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestRingPushAndRetrieve(t *testing.T) {
 	rb := NewRingBuffer(5)
@@ -13,8 +15,8 @@ func TestRingPushAndRetrieve(t *testing.T) {
 	}
 	expected := []string{"line1", "line2", "line3"}
 	for i, exp := range expected {
-		if lines[i] != exp {
-			t.Errorf("lines[%d] = %q, want %q", i, lines[i], exp)
+		if lines[i].Text != exp {
+			t.Errorf("lines[%d] = %q, want %q", i, lines[i].Text, exp)
 		}
 	}
 }
@@ -30,8 +32,8 @@ func TestRingOverflow(t *testing.T) {
 	}
 	expected := []string{"line2", "line3", "line4", "line5", "line6"}
 	for i, exp := range expected {
-		if lines[i] != exp {
-			t.Errorf("lines[%d] = %q, want %q", i, lines[i], exp)
+		if lines[i].Text != exp {
+			t.Errorf("lines[%d] = %q, want %q", i, lines[i].Text, exp)
 		}
 	}
 }
@@ -42,7 +44,7 @@ func TestRingFIFOOrder(t *testing.T) {
 	rb.Push("b")
 	rb.Push("c")
 	lines := rb.Lines()
-	if lines[0] != "a" || lines[1] != "b" || lines[2] != "c" {
+	if lines[0].Text != "a" || lines[1].Text != "b" || lines[2].Text != "c" {
 		t.Errorf("expected FIFO order [a b c], got %v", lines)
 	}
 }
@@ -56,7 +58,7 @@ func TestRingLast(t *testing.T) {
 	if len(last) != 3 {
 		t.Fatalf("expected 3, got %d", len(last))
 	}
-	if last[0] != "h" || last[1] != "i" || last[2] != "j" {
+	if last[0].Text != "h" || last[1].Text != "i" || last[2].Text != "j" {
 		t.Errorf("expected [h i j], got %v", last)
 	}
 }
@@ -69,7 +71,7 @@ func TestRingLastGreaterThanCount(t *testing.T) {
 	if len(last) != 2 {
 		t.Fatalf("expected 2, got %d", len(last))
 	}
-	if last[0] != "x" || last[1] != "y" {
+	if last[0].Text != "x" || last[1].Text != "y" {
 		t.Errorf("expected [x y], got %v", last)
 	}
 }
@@ -129,8 +131,8 @@ func TestRingCapacityOne(t *testing.T) {
 		t.Fatalf("expected Len 1, got %d", rb.Len())
 	}
 	lines := rb.Lines()
-	if lines[0] != "second" {
-		t.Errorf("expected 'second', got %q", lines[0])
+	if lines[0].Text != "second" {
+		t.Errorf("expected 'second', got %q", lines[0].Text)
 	}
 	if rb.TotalCount() != 2 {
 		t.Errorf("expected TotalCount 2, got %d", rb.TotalCount())
@@ -158,4 +160,44 @@ func TestRingPanicNegativeCapacity(t *testing.T) {
 		}
 	}()
 	NewRingBuffer(-3)
+}
+
+func TestRingLineNum(t *testing.T) {
+	rb := NewRingBuffer(5)
+	rb.Push("a")
+	rb.Push("b")
+	rb.Push("c")
+	lines := rb.Lines()
+	if lines[0].LineNum != 1 {
+		t.Errorf("expected LineNum 1, got %d", lines[0].LineNum)
+	}
+	if lines[1].LineNum != 2 {
+		t.Errorf("expected LineNum 2, got %d", lines[1].LineNum)
+	}
+	if lines[2].LineNum != 3 {
+		t.Errorf("expected LineNum 3, got %d", lines[2].LineNum)
+	}
+}
+
+func TestRingLineNumOverflow(t *testing.T) {
+	rb := NewRingBuffer(3)
+	for i := 0; i < 5; i++ {
+		rb.Push("x")
+	}
+	lines := rb.Lines()
+	if lines[0].LineNum != 3 {
+		t.Errorf("expected LineNum 3, got %d", lines[0].LineNum)
+	}
+	if lines[2].LineNum != 5 {
+		t.Errorf("expected LineNum 5, got %d", lines[2].LineNum)
+	}
+}
+
+func TestRingTimestamp(t *testing.T) {
+	rb := NewRingBuffer(5)
+	rb.Push("a")
+	lines := rb.Lines()
+	if lines[0].Time.IsZero() {
+		t.Error("expected non-zero timestamp")
+	}
 }

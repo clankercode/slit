@@ -16,8 +16,8 @@ type Layout struct {
 }
 
 var Layouts = map[string]Layout{
-	"box":     {Name: "box", TopLines: 1, BottomLines: 1, SideWidth: 2},
-	"rounded": {Name: "rounded", TopLines: 1, BottomLines: 1, SideWidth: 2},
+	"box":     {Name: "box", TopLines: 1, BottomLines: 1, SideWidth: 4},
+	"rounded": {Name: "rounded", TopLines: 1, BottomLines: 1, SideWidth: 4},
 	"compact": {Name: "compact", TopLines: 1, BottomLines: 1, SideWidth: 0},
 	"minimal": {Name: "minimal", TopLines: 0, BottomLines: 1, SideWidth: 0},
 	"none":    {Name: "none", TopLines: 0, BottomLines: 0, SideWidth: 0},

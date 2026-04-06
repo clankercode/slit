@@ -1,7 +1,17 @@
 package main
 
+import (
+	"time"
+)
+
+type LineEntry struct {
+	Text    string
+	Time    time.Time
+	LineNum int
+}
+
 type RingBuffer struct {
-	lines      []string
+	entries    []LineEntry
 	capacity   int
 	head       int
 	count      int
@@ -14,42 +24,47 @@ func NewRingBuffer(capacity int) *RingBuffer {
 		panic("ring buffer capacity must be > 0")
 	}
 	return &RingBuffer{
-		lines:    make([]string, capacity),
+		entries:  make([]LineEntry, capacity),
 		capacity: capacity,
 	}
 }
 
-func (rb *RingBuffer) Push(line string) {
-	rb.lines[rb.head] = line
+func (rb *RingBuffer) Push(text string) {
+	entry := LineEntry{
+		Text:    text,
+		Time:    time.Now(),
+		LineNum: rb.totalCount + 1,
+	}
+	rb.entries[rb.head] = entry
 	rb.head = (rb.head + 1) % rb.capacity
 	if rb.count < rb.capacity {
 		rb.count++
 	}
 	rb.totalCount++
-	rb.totalBytes += int64(len(line))
+	rb.totalBytes += int64(len(text))
 }
 
-func (rb *RingBuffer) Lines() []string {
+func (rb *RingBuffer) Lines() []LineEntry {
 	if rb.count == 0 {
-		return []string{}
+		return []LineEntry{}
 	}
-	result := make([]string, rb.count)
+	result := make([]LineEntry, rb.count)
 	for i := 0; i < rb.count; i++ {
-		result[i] = rb.lines[(rb.head+rb.capacity-rb.count+i)%rb.capacity]
+		result[i] = rb.entries[(rb.head+rb.capacity-rb.count+i)%rb.capacity]
 	}
 	return result
 }
 
-func (rb *RingBuffer) Last(n int) []string {
+func (rb *RingBuffer) Last(n int) []LineEntry {
 	if n <= 0 {
-		return []string{}
+		return []LineEntry{}
 	}
 	if n > rb.count {
 		n = rb.count
 	}
-	result := make([]string, n)
+	result := make([]LineEntry, n)
 	for i := 0; i < n; i++ {
-		result[i] = rb.lines[(rb.head+rb.capacity-n+i)%rb.capacity]
+		result[i] = rb.entries[(rb.head+rb.capacity-n+i)%rb.capacity]
 	}
 	return result
 }
