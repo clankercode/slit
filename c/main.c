@@ -2,9 +2,31 @@
 #include <stdlib.h>
 #include <string.h>
 #include <getopt.h>
+#include <poll.h>
+#include <sys/stat.h>
+#include <time.h>
+#include <unistd.h>
 #include "slit.h"
+#include "terminal.h"
+#include "buffer.h"
+#include "render.h"
+#include "layout.h"
+#include "spinner.h"
+#include "status.h"
+#include "tee.h"
+#include "debug.h"
+#include "completion.h"
 
-#define DEFAULT_TRUNCATION_CHAR "..."
+#define DEFAULT_TRUNCATION_CHAR "\xe2\x80\xa6"
+
+static int g_tty_fd = -1;
+
+static void atexit_restore(void) {
+    if (g_tty_fd >= 0) {
+        term_raw_restore();
+        term_restore_title();
+    }
+}
 
 static void print_usage(void) {
     printf("Usage: slit [OPTIONS]\n");
@@ -115,9 +137,190 @@ static void free_config(struct slit_config *cfg) {
     if (cfg->log_file) free(cfg->log_file);
 }
 
+static int digits_in(size_t n) {
+    if (n < 10) return 1;
+    int d = 0;
+    while (n > 0) { n /= 10; d++; }
+    return d;
+}
+
+static int gutter_width(struct slit_config *cfg, size_t total_lines) {
+    int w = 0;
+    if (cfg->line_numbers) {
+        w += digits_in(total_lines > 0 ? total_lines : 1) + 1;
+    }
+    if (cfg->timestamp) {
+        w += 9;
+    }
+    return w;
+}
+
+static int line_num_pad_width(struct slit_config *cfg, size_t total_lines) {
+    if (!cfg->line_numbers) return 0;
+    return digits_in(total_lines > 0 ? total_lines : 1);
+}
+
+static void format_line_prefix(struct slit_config *cfg, struct line_entry *entry,
+                               char *buf, size_t buf_size, size_t total_lines,
+                               int is_wrap_continuation) {
+    buf[0] = '\0';
+    size_t pos = 0;
+
+    if (cfg->timestamp) {
+        struct tm tm_buf;
+        localtime_r(&entry->arrival, &tm_buf);
+        pos += strftime(buf + pos, buf_size - pos, "%H:%M:%S ", &tm_buf);
+    }
+
+    if (cfg->line_numbers) {
+        int pad_w = line_num_pad_width(cfg, total_lines);
+        if (is_wrap_continuation) {
+            for (int i = 0; i < pad_w && pos < buf_size - 2; i++) buf[pos++] = ' ';
+            if (pos < buf_size - 2) buf[pos++] = ' ';
+        } else {
+            pos += snprintf(buf + pos, buf_size - pos, "%*zu ", pad_w, entry->line_num);
+        }
+    }
+
+    buf[pos] = '\0';
+}
+
+static void passthrough_mode(struct slit_config *cfg) {
+    struct tee_writer *tw = NULL;
+    if (cfg->output) {
+        tw = tee_open(cfg->output, cfg->append, cfg->tee_format);
+    }
+    debug_init(cfg->log_file, cfg->debug);
+    debug_log("passthrough mode starting");
+    char *line = NULL;
+    size_t len = 0;
+    while (getline(&line, &len, stdin) != -1) {
+        fputs(line, stdout);
+        if (tw) {
+            size_t slen = strlen(line);
+            while (slen > 0 && (line[slen-1] == '\n' || line[slen-1] == '\r'))
+                line[--slen] = '\0';
+            tee_write_line(tw, line);
+        }
+    }
+    free(line);
+    if (tw) tee_close(tw);
+    debug_log("passthrough mode done");
+    debug_close();
+}
+
+static void render_frame(struct slit_config *cfg, struct ring_buffer *buf,
+                         int term_width, int term_rows, int content_lines,
+                         int spinner_frame, int eof, long file_size,
+                         int prev_height) {
+    int data_lines = layout_data_lines(cfg->layout, content_lines);
+    int content_width = layout_content_width(cfg->layout, term_width);
+    int gw = gutter_width(cfg, buffer_total_lines(buf));
+    int data_width = content_width - gw;
+    if (data_width < 1) data_width = 1;
+
+    int should_strip = (cfg->color == COLOR_NEVER) ||
+                       (cfg->color == COLOR_AUTO && !is_stderr_tty());
+
+    size_t count = buffer_count(buf);
+    size_t start = 0;
+    if (data_lines > 0 && (int)count > data_lines) {
+        start = count - data_lines;
+    }
+
+    int visible_count = (int)(count - start);
+    if (visible_count > data_lines) visible_count = data_lines;
+
+    char **formatted = malloc(visible_count * sizeof(char *));
+    if (!formatted) return;
+
+    int fmt_count = 0;
+    char trim_buf[4096];
+    char stripped_buf[4096];
+    char prefix_buf[256];
+
+    for (size_t i = start; i < count && fmt_count < visible_count; ) {
+        struct line_entry *entry = buffer_get(buf, i);
+        if (!entry || !entry->text) { i++; continue; }
+
+        const char *line = entry->text;
+
+        if (should_strip) {
+            strip_ansi(line, stripped_buf, sizeof(stripped_buf));
+            line = stripped_buf;
+        }
+
+        if (cfg->wrap) {
+            char **wrapped = NULL;
+            int wrap_count = 0;
+            wrap_line(line, data_width, &wrapped, &wrap_count);
+            for (int w = 0; w < wrap_count && fmt_count < visible_count; w++) {
+                format_line_prefix(cfg, entry, prefix_buf, sizeof(prefix_buf),
+                                   buffer_total_lines(buf), w > 0);
+                size_t prefix_len = strlen(prefix_buf);
+                size_t wrap_len = strlen(wrapped[w]);
+                char *full = malloc(prefix_len + wrap_len + 1);
+                if (full) {
+                    memcpy(full, prefix_buf, prefix_len);
+                    memcpy(full + prefix_len, wrapped[w], wrap_len + 1);
+                    formatted[fmt_count++] = full;
+                }
+            }
+            wrap_lines_free(wrapped, wrap_count);
+        } else {
+            trim_line(line, trim_buf, sizeof(trim_buf), data_width, cfg->truncation_char);
+            format_line_prefix(cfg, entry, prefix_buf, sizeof(prefix_buf),
+                               buffer_total_lines(buf), 0);
+            size_t prefix_len = strlen(prefix_buf);
+            size_t trim_len = strlen(trim_buf);
+            char *full = malloc(prefix_len + trim_len + 1);
+            if (full) {
+                memcpy(full, prefix_buf, prefix_len);
+                memcpy(full + prefix_len, trim_buf, trim_len + 1);
+                formatted[fmt_count++] = full;
+            }
+        }
+        i++;
+    }
+
+    int status_width = content_width;
+    if (cfg->layout == LAYOUT_BOX || cfg->layout == LAYOUT_ROUNDED) {
+        status_width = term_width - 4;
+    }
+
+    char *status = NULL;
+    if (cfg->layout != LAYOUT_NONE) {
+        status = format_status_line(cfg->spinner, spinner_frame, eof,
+                                    buffer_total_lines(buf), buffer_total_bytes(buf),
+                                    file_size, status_width);
+    }
+
+    int total_height = layout_total_height(cfg->layout, fmt_count);
+
+    if (prev_height > 0) {
+        fprintf(stderr, "\x1b[%dA", prev_height);
+    }
+    fprintf(stderr, "\x1b[0J");
+
+    layout_render(cfg->layout, term_width, "slit",
+                  (const char **)formatted, fmt_count,
+                  status, cfg->quote_bg);
+
+    for (int i = 0; i < fmt_count; i++) free(formatted[i]);
+    free(formatted);
+    free(status);
+
+    (void)term_rows;
+    (void)total_height;
+}
+
 int main(int argc, char *argv[]) {
     if (argc > 1 && strcmp(argv[1], "completion") == 0) {
-        printf("# Completion scripts not yet implemented\n");
+        if (argc < 3) {
+            fprintf(stderr, "Usage: slit completion <shell>\nSupported: bash, zsh, fish\n");
+            return 1;
+        }
+        completion_print(argv[2]);
         return 0;
     }
 
@@ -261,9 +464,187 @@ int main(int argc, char *argv[]) {
         cfg.layout = layout_value;
     }
 
-    printf("Parsed config: lines=%d, max_lines=%d, layout=%d, spinner=%d\n",
-           cfg.lines, cfg.max_lines, cfg.layout, cfg.spinner);
+    int force_render = getenv("SLIT_FORCE_RENDER") != NULL &&
+                       strcmp(getenv("SLIT_FORCE_RENDER"), "1") == 0;
+    int can_render = is_stderr_tty() || force_render;
 
+    if (!can_render) {
+        passthrough_mode(&cfg);
+        free_config(&cfg);
+        return 0;
+    }
+
+    int tty_fd = term_init();
+    if (tty_fd < 0) {
+        passthrough_mode(&cfg);
+        free_config(&cfg);
+        return 0;
+    }
+
+    g_tty_fd = tty_fd;
+    atexit(atexit_restore);
+
+    signals_install();
+    term_raw_enter(tty_fd);
+
+    if (cfg.layout != LAYOUT_NONE) {
+        term_set_title("slit");
+    }
+
+    struct ring_buffer *buf = buffer_create(cfg.max_lines);
+    if (!buf) {
+        term_restore_title();
+        term_cleanup();
+        free_config(&cfg);
+        return 1;
+    }
+
+    struct tee_writer *tw = NULL;
+    if (cfg.output) {
+        tw = tee_open(cfg.output, cfg.append, cfg.tee_format);
+    }
+
+    debug_init(cfg.log_file, cfg.debug);
+    debug_log("slit starting");
+
+    long file_size = 0;
+    struct stat st;
+    if (fstat(STDIN_FILENO, &st) == 0 && S_ISREG(st.st_mode)) {
+        file_size = st.st_size;
+    }
+
+    int term_rows = 24, term_cols = 80;
+    term_get_size(tty_fd, &term_rows, &term_cols);
+
+    struct layout_chrome chrome = layout_get_chrome(cfg.layout);
+    int content_lines;
+    if (cfg.lines <= 0) {
+        content_lines = term_rows - chrome.top_lines - chrome.bottom_lines;
+    } else {
+        content_lines = cfg.lines;
+    }
+    if (content_lines < 1) content_lines = 1;
+
+    int eof_reached = 0;
+    int spinner_frame = 0;
+    int prev_height = 0;
+    int dirty = 0;
+
+    struct pollfd fds[2];
+    fds[0].fd = STDIN_FILENO;
+    fds[0].events = POLLIN;
+    fds[1].fd = tty_fd;
+    fds[1].events = POLLIN;
+
+    char *line = NULL;
+    size_t line_len = 0;
+
+    while (!sigint_flag && !eof_reached) {
+        int ret = poll(fds, 2, RENDER_INTERVAL_MS);
+
+        if (sigwinch_flag) {
+            sigwinch_flag = 0;
+            debug_log("SIGWINCH received");
+            term_get_size(tty_fd, &term_rows, &term_cols);
+            if (cfg.lines <= 0) {
+                content_lines = term_rows - chrome.top_lines - chrome.bottom_lines;
+                if (content_lines < 1) content_lines = 1;
+            }
+            dirty = 1;
+        }
+
+        if (sigtstp_flag) {
+            sigtstp_flag = 0;
+            term_raw_restore();
+            term_restore_title();
+            raise(SIGSTOP);
+            term_raw_enter(tty_fd);
+            if (cfg.layout != LAYOUT_NONE) term_set_title("slit");
+            term_get_size(tty_fd, &term_rows, &term_cols);
+            if (cfg.lines <= 0) {
+                content_lines = term_rows - chrome.top_lines - chrome.bottom_lines;
+                if (content_lines < 1) content_lines = 1;
+            }
+            dirty = 1;
+        }
+
+        if (ret < 0) continue;
+
+        if (fds[0].revents & POLLIN) {
+            ssize_t nread = getline(&line, &line_len, stdin);
+            if (nread == -1) {
+                eof_reached = 1;
+                debug_log("EOF reached, total_lines=%zu", buffer_total_lines(buf));
+            } else {
+                while (nread > 0 && (line[nread-1] == '\n' || line[nread-1] == '\r')) {
+                    line[--nread] = '\0';
+                }
+
+                struct line_entry *entry = malloc(sizeof(struct line_entry));
+                if (entry) {
+                    entry->text = strdup(line);
+                    entry->arrival = time(NULL);
+                    entry->line_num = buffer_total_lines(buf) + 1;
+                    entry->byte_len = nread;
+                    buffer_push(buf, entry);
+                }
+
+                if (tw) tee_write_line(tw, line);
+
+                fprintf(stdout, "%s\n", line);
+                fflush(stdout);
+                dirty = 1;
+            }
+        }
+
+        if (fds[0].revents & (POLLHUP | POLLERR)) {
+            eof_reached = 1;
+        }
+
+        if (fds[1].revents & POLLIN) {
+            char c;
+            ssize_t n = read(tty_fd, &c, 1);
+            if (n > 0 && (c == 'q' || c == 'Q')) {
+                sigint_flag = 1;
+            }
+        }
+
+        if (dirty || eof_reached) {
+            spinner_frame++;
+            render_frame(&cfg, buf, term_cols, term_rows, content_lines,
+                         spinner_frame, eof_reached, file_size, prev_height);
+
+            struct layout_chrome ch = layout_get_chrome(cfg.layout);
+            size_t count = buffer_count(buf);
+            int vis = (int)count;
+            if (content_lines > 0 && vis > content_lines) vis = content_lines;
+            prev_height = vis + ch.top_lines + ch.bottom_lines;
+
+            dirty = 0;
+        }
+    }
+
+    if (eof_reached && !sigint_flag) {
+        spinner_frame++;
+        render_frame(&cfg, buf, term_cols, term_rows, content_lines,
+                     spinner_frame, 1, file_size, prev_height);
+
+        struct pollfd wait_fd;
+        wait_fd.fd = tty_fd;
+        wait_fd.events = POLLIN;
+        poll(&wait_fd, 1, 200);
+    }
+
+    fprintf(stderr, "\n");
+
+    term_restore_title();
+    term_raw_restore();
+    term_cleanup();
+    if (tw) tee_close(tw);
+    debug_log("slit exiting");
+    debug_close();
+    buffer_free(buf);
+    free(line);
     free_config(&cfg);
     return 0;
 }

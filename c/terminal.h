@@ -22,5 +22,8 @@ void term_get_size(int fd, int *rows, int *cols);
 void term_cleanup(void);
 int is_stdin_tty(void);
 int is_stderr_tty(void);
+void signals_install(void);
+void term_set_title(const char *title);
+void term_restore_title(void);
 
 #endif /* TERMINAL_H */
