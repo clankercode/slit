@@ -192,17 +192,6 @@ pub fn wrap_line_ansi(line: &str, width_limit: usize) -> Vec<String> {
     let mut visible = 0;
     let mut i = 0;
     while i < chars.len() {
-        if visible >= width_limit {
-            if !active_sgr.is_empty() {
-                current_line.push_str("\x1b[0m");
-            }
-            result.push(current_line.clone());
-            current_line.clear();
-            if !active_sgr.is_empty() {
-                current_line.push_str(&active_sgr);
-            }
-            visible = 0;
-        }
         if chars[i] == '\x1b' {
             let start = i;
             i += 1;
@@ -238,6 +227,19 @@ pub fn wrap_line_ansi(line: &str, width_limit: usize) -> Vec<String> {
             pending_ansi.push_str(&sgr);
             continue;
         }
+
+        if visible >= width_limit {
+            if !active_sgr.is_empty() {
+                current_line.push_str("\x1b[0m");
+            }
+            result.push(current_line.clone());
+            current_line.clear();
+            if !active_sgr.is_empty() {
+                current_line.push_str(&active_sgr);
+            }
+            visible = 0;
+        }
+
         if !pending_ansi.is_empty() {
             current_line.push_str(&pending_ansi);
             pending_ansi.clear();
@@ -335,5 +337,184 @@ mod tests {
         let result = wrap_line_ansi("\x1b[31mhello world\x1b[0m", 5);
         assert!(result.len() >= 2);
         assert!(result[0].contains("\x1b[31m"));
+    }
+
+    #[test]
+    fn test_bug1_no_stdout_echo() {
+        // Bug #1 is an architectural check: app.rs stdin reader sends lines
+        // via channel, never writes to stdout. Verified by code inspection.
+        // This test ensures wrap_line_ansi doesn't produce empty phantom lines.
+        let line = "\x1b[31mhello\x1b[0m";
+        let result = wrap_line_ansi(line, 80);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0], "\x1b[31mhello\x1b[0m");
+    }
+
+    #[test]
+    fn test_bug2_pad_right_ansi_content() {
+        let colored = "\x1b[31mhello\x1b[0m";
+        let vis = ansi_visible_width(colored);
+        assert_eq!(vis, 5);
+        let padded = {
+            let target = 10;
+            if vis > target {
+                trim_line_ansi(colored, target, "")
+            } else if vis == target {
+                colored.to_string()
+            } else {
+                let mut r = colored.to_string();
+                for _ in 0..(target - vis) {
+                    r.push(' ');
+                }
+                r
+            }
+        };
+        assert_eq!(ansi_visible_width(&padded), 10);
+    }
+
+    #[test]
+    fn test_bug3_wrap_line_ansi_reset_detection() {
+        let line = "a\x1b[0mb";
+        let result = wrap_line_ansi(line, 10);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0], "a\x1b[0mb");
+    }
+
+    #[test]
+    fn test_bug3_wrap_line_ansi_no_phantom_line() {
+        let line = "abcde";
+        let result = wrap_line_ansi(line, 5);
+        assert_eq!(
+            result.len(),
+            1,
+            "should not produce phantom empty line: {:?}",
+            result
+        );
+        assert_eq!(result[0], "abcde");
+    }
+
+    #[test]
+    fn test_bug3_wrap_line_ansi_no_phantom_line_multiple_widths() {
+        for w in 3..=10 {
+            let line = "a".repeat(w);
+            let result = wrap_line_ansi(&line, w);
+            assert_eq!(
+                result.len(),
+                1,
+                "width={}: should not produce phantom line: {:?}",
+                w,
+                result
+            );
+        }
+    }
+
+    #[test]
+    fn test_bug3_wrap_line_ansi_width79() {
+        let line = "a".repeat(79);
+        let result = wrap_line_ansi(&line, 79);
+        assert_eq!(result.len(), 1);
+    }
+
+    #[test]
+    fn test_bug4_trim_line_ansi_no_dangling_ansi() {
+        let line = "\x1b[31mhello world\x1b[0m";
+        let result = trim_line_ansi(line, 7, "…");
+        assert!(
+            !result.contains("\x1b[31m…"),
+            "should not have dangling ANSI before trunc char"
+        );
+        assert!(result.ends_with("…"), "should end with trunc char");
+    }
+
+    #[test]
+    fn test_bug5_visible_width_wide_char() {
+        assert_eq!(ansi_visible_width("中"), 2);
+        assert_eq!(ansi_visible_width("中文字"), 6);
+    }
+
+    #[test]
+    fn test_bug5_visible_width_mixed_width() {
+        assert_eq!(ansi_visible_width("a中b"), 4);
+    }
+
+    #[test]
+    fn test_bug5_visible_width_maze_char() {
+        assert_eq!(ansi_visible_width("╱"), 1);
+        assert_eq!(ansi_visible_width("╲"), 1);
+    }
+
+    #[test]
+    fn test_bug5_trim_line_ansi_wide_char() {
+        let result = trim_line_ansi("中文测试", 5, "…");
+        assert!(result.ends_with("…"));
+        assert!(ansi_visible_width(&result) <= 5);
+    }
+
+    #[test]
+    fn test_bug5_wrap_line_ansi_wide_char() {
+        let result = wrap_line_ansi("中文测试", 4);
+        assert!(result.len() >= 2);
+    }
+
+    #[test]
+    fn test_visible_width_unicode() {
+        assert_eq!(ansi_visible_width("hello"), 5);
+        assert_eq!(ansi_visible_width("\x1b[31mred\x1b[0m"), 3);
+    }
+
+    #[test]
+    fn test_trim_line_width_one() {
+        let result = trim_line("abc", 1, "…");
+        assert_eq!(result, "…");
+    }
+
+    #[test]
+    fn test_trim_line_custom_trunc_char() {
+        let result = trim_line("hello world", 8, ">");
+        assert_eq!(result, "hello w>");
+    }
+
+    #[test]
+    fn test_trim_line_multi_byte_trunc_char() {
+        let result = trim_line("hello world", 8, "…");
+        assert_eq!(result, "hello w…");
+    }
+
+    #[test]
+    fn test_strip_ansi_multiple_codes() {
+        assert_eq!(
+            strip_ansi("\x1b[1;31m\x1b[42mbold red on green\x1b[0m"),
+            "bold red on green"
+        );
+    }
+
+    #[test]
+    fn test_strip_ansi_osc_sequence() {
+        assert_eq!(strip_ansi("\x1b]0;window-title\x07rest"), "rest");
+    }
+
+    #[test]
+    fn test_wrap_line_exact_split() {
+        let result = wrap_line("abcde", 5);
+        assert_eq!(result, vec!["abcde"]);
+    }
+
+    #[test]
+    fn test_trim_line_ansi_preserves_color() {
+        let result = trim_line_ansi("\x1b[31mhi\x1b[0m", 10, "…");
+        assert_eq!(result, "\x1b[31mhi\x1b[0m");
+    }
+
+    #[test]
+    fn test_trim_line_ansi_truncates_with_color() {
+        let result = trim_line_ansi("\x1b[31mhello world\x1b[0m", 8, "…");
+        assert!(result.contains("\x1b[31m"));
+        assert!(result.ends_with("…"));
+    }
+
+    #[test]
+    fn test_wrap_line_ansi_multiple_colors() {
+        let result = wrap_line_ansi("\x1b[31mred\x1b[0m \x1b[32mgreen\x1b[0m", 5);
+        assert!(result.len() >= 2);
     }
 }

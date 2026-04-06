@@ -296,4 +296,79 @@ mod tests {
         assert_eq!(result[1], "line2");
         assert_eq!(result[2], "status");
     }
+
+    #[test]
+    fn test_render_layout_box() {
+        let lines = vec!["hello".to_string()];
+        let result = render_layout(Layout::Box, "slit", &lines, "ok", 20);
+        assert!(result[0].contains("┌"));
+        assert!(result[0].contains("┐"));
+        assert!(result.last().unwrap().contains("└"));
+        assert!(result.last().unwrap().contains("┘"));
+        assert!(result.iter().any(|l| l.contains("hello")));
+    }
+
+    #[test]
+    fn test_render_layout_rounded() {
+        let lines = vec!["hello".to_string()];
+        let result = render_layout(Layout::Rounded, "slit", &lines, "ok", 20);
+        assert!(result[0].contains("╭"));
+        assert!(result[0].contains("╮"));
+    }
+
+    #[test]
+    fn test_render_layout_none() {
+        let lines = vec!["hello".to_string()];
+        let result = render_layout(Layout::None, "slit", &lines, "status", 20);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0], "hello");
+    }
+
+    #[test]
+    fn test_render_layout_quote() {
+        let lines = vec!["hello".to_string()];
+        let result = render_layout(Layout::Quote, "slit", &lines, "status", 20);
+        assert!(result.iter().any(|l| l.contains("▌")));
+    }
+
+    #[test]
+    fn test_render_layout_compact() {
+        let lines = vec!["hello".to_string()];
+        let result = render_layout(Layout::Compact, "slit", &lines, "status", 20);
+        assert!(result.len() >= 3);
+        assert!(result.iter().any(|l| l.contains("hello")));
+    }
+
+    #[test]
+    fn test_box_width_alignment() {
+        let lines = vec!["hello".to_string()];
+        let result = render_layout(Layout::Box, "slit", &lines, "ok", 20);
+        for line in &result {
+            assert_eq!(
+                unicode_width::UnicodeWidthStr::width(line.as_str()),
+                20,
+                "box line width mismatch: {:?}",
+                line
+            );
+        }
+    }
+
+    #[test]
+    fn test_pad_right_overflow() {
+        let s = "hello world this is long";
+        let result = pad_right(s, 10);
+        assert!(crate::render::ansi_visible_width(&result) <= 10);
+    }
+
+    #[test]
+    fn test_pad_right_exact() {
+        let result = pad_right("hello", 5);
+        assert_eq!(result, "hello");
+    }
+
+    #[test]
+    fn test_pad_right_basic() {
+        let result = pad_right("hi", 5);
+        assert_eq!(result, "hi   ");
+    }
 }
