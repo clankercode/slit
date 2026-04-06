@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/mattn/go-runewidth"
 )
 
 type Layout struct {
@@ -68,7 +68,7 @@ func renderBox(title string, content string, status string, width int, tl string
 		titlePart = " " + title + " "
 	}
 	horizInner := width - 2
-	remaining := horizInner - utf8.RuneCountInString(titlePart)
+	remaining := horizInner - runewidth.StringWidth(titlePart)
 	if remaining < 0 {
 		remaining = 0
 	}
@@ -84,7 +84,7 @@ func renderBox(title string, content string, status string, width int, tl string
 	if status != "" {
 		statusPart = " " + status + " "
 	}
-	remaining = horizInner - utf8.RuneCountInString(statusPart)
+	remaining = horizInner - runewidth.StringWidth(statusPart)
 	if remaining < 0 {
 		remaining = 0
 	}

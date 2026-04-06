@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"strings"
+
+	"github.com/mattn/go-runewidth"
 )
 
 var SpinnerFrames = map[string][]string{
@@ -50,12 +52,12 @@ func FormatStatusLine(spinnerStyle string, frame int, eof bool, lineCount int, t
 		return line
 	}
 
-	lineRunes := []rune(line)
-	if len(lineRunes) > width {
-		return string(lineRunes[:width])
+	lineWidth := runewidth.StringWidth(line)
+	if lineWidth > width {
+		return TrimLineANSI(line, width, "")
 	}
-	if len(lineRunes) < width {
-		return line + strings.Repeat(" ", width-len(lineRunes))
+	if lineWidth < width {
+		return line + strings.Repeat(" ", width-lineWidth)
 	}
 	return line
 }

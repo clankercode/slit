@@ -2,7 +2,6 @@ package main
 
 import (
 	"regexp"
-	"unicode/utf8"
 
 	"github.com/mattn/go-runewidth"
 )
@@ -11,12 +10,18 @@ var ansiCSI = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)
 var ansiOSC = regexp.MustCompile(`\x1b\].*?\x07`)
 
 func TrimLine(line string, width int, truncChar string) string {
-	if utf8.RuneCountInString(line) <= width {
+	if runewidth.StringWidth(line) <= width {
 		return line
 	}
-	targetWidth := width - utf8.RuneCountInString(truncChar)
+	targetWidth := width - runewidth.StringWidth(truncChar)
 	runes := []rune(line)
-	return string(runes[:targetWidth]) + truncChar
+	vis := 0
+	end := 0
+	for end < len(runes) && vis+runewidth.RuneWidth(runes[end]) <= targetWidth {
+		vis += runewidth.RuneWidth(runes[end])
+		end++
+	}
+	return string(runes[:end]) + truncChar
 }
 
 func WrapLine(line string, width int) []string {
@@ -28,13 +33,18 @@ func WrapLine(line string, width int) []string {
 	}
 	runes := []rune(line)
 	var result []string
-	for i := 0; i < len(runes); i += width {
-		end := i + width
-		if end > len(runes) {
-			end = len(runes)
+	i := 0
+	for i < len(runes) {
+		vis := 0
+		start := i
+		for i < len(runes) && vis+runewidth.RuneWidth(runes[i]) <= width {
+			vis += runewidth.RuneWidth(runes[i])
+			i++
 		}
-		chunk := string(runes[i:end])
-		result = append(result, chunk)
+		if i == start {
+			i++
+		}
+		result = append(result, string(runes[start:i]))
 	}
 	return result
 }
