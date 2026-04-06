@@ -20,10 +20,6 @@ func GetSpinnerFrame(style string, frame int) string {
 	return frames[frame%len(frames)]
 }
 
-func SpinnerFrameCount(style string) int {
-	return len(SpinnerFrames[style])
-}
-
 func FormatStatusLine(spinnerStyle string, frame int, eof bool, lineCount int, totalBytes int64, fileSize int64, width int) string {
 	spinner := GetSpinnerFrame(spinnerStyle, frame)
 

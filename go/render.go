@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"regexp"
 	"unicode/utf8"
 )
@@ -36,14 +35,6 @@ func WrapLine(line string, width int) []string {
 		result = append(result, chunk)
 	}
 	return result
-}
-
-func FormatLineWithNumber(line string, lineNum int, gutterWidth int) string {
-	return fmt.Sprintf("%*d %s", gutterWidth, lineNum, line)
-}
-
-func FormatLineWithTimestamp(line string, ts string) string {
-	return ts + " " + line
 }
 
 func StripANSI(s string) string {
@@ -118,4 +109,97 @@ func TrimLineANSI(line string, width int, truncChar string) string {
 	return string(resultRunes) + truncChar
 }
 
-var _ = regexp.MustCompile
+func WrapLineANSI(line string, width int) []string {
+	if width <= 0 {
+		return []string{line}
+	}
+	if line == "" {
+		return []string{""}
+	}
+
+	runes := []rune(line)
+	var result []string
+	var currentLine []rune
+	var pendingANSI [][]rune
+	var activeSGR []rune
+	visible := 0
+	i := 0
+
+	for i < len(runes) {
+		// Check if we need to wrap before processing this character
+		if visible >= width {
+			// Don't add pending ANSI to current line - carry it forward
+			if len(activeSGR) > 0 {
+				currentLine = append(currentLine, []rune("\x1b[0m")...)
+			}
+			result = append(result, string(currentLine))
+			currentLine = []rune{}
+			if len(activeSGR) > 0 {
+				currentLine = append(currentLine, activeSGR...)
+			}
+			// pendingANSI is carried forward but not added yet
+			visible = 0
+		}
+
+		if runes[i] == '\x1b' {
+			var seqRunes []rune
+			seqRunes = append(seqRunes, runes[i])
+			i++
+			if i < len(runes) && runes[i] == '[' {
+				seqRunes = append(seqRunes, runes[i])
+				i++
+				for i < len(runes) {
+					seqRunes = append(seqRunes, runes[i])
+					if (runes[i] >= 'A' && runes[i] <= 'Z') || (runes[i] >= 'a' && runes[i] <= 'z') {
+						if runes[i] == 'm' {
+							if len(seqRunes) == 3 && seqRunes[2] == '0' {
+								activeSGR = nil
+							} else {
+								activeSGR = seqRunes
+							}
+						}
+						i++
+						break
+					}
+					i++
+				}
+			} else if i < len(runes) && runes[i] == ']' {
+				seqRunes = append(seqRunes, runes[i])
+				i++
+				for i < len(runes) {
+					seqRunes = append(seqRunes, runes[i])
+					if runes[i] == '\x07' {
+						i++
+						break
+					}
+					i++
+				}
+			} else {
+				if i < len(runes) {
+					seqRunes = append(seqRunes, runes[i])
+					i++
+				}
+			}
+			pendingANSI = append(pendingANSI, seqRunes)
+			continue
+		}
+
+		// This is a visible character - add pending ANSI first
+		for _, seq := range pendingANSI {
+			currentLine = append(currentLine, seq...)
+		}
+		pendingANSI = nil
+		currentLine = append(currentLine, runes[i])
+		visible++
+		i++
+	}
+
+	if len(currentLine) > 0 || len(result) == 0 {
+		for _, seq := range pendingANSI {
+			currentLine = append(currentLine, seq...)
+		}
+		result = append(result, string(currentLine))
+	}
+
+	return result
+}

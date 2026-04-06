@@ -22,6 +22,7 @@ type titleSetMsg struct{}
 type model struct {
 	cfg          *Config
 	buf          *RingBuffer
+	pendingLines []LineEntry
 	width        int
 	height       int
 	contentLines int
@@ -116,9 +117,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case lineMsg:
-		m.buf.Push(string(msg))
+		entry := LineEntry{
+			Text:    string(msg),
+			Time:    time.Now(),
+			LineNum: m.buf.TotalCount() + len(m.pendingLines) + 1,
+		}
+		m.pendingLines = append(m.pendingLines, entry)
 		if m.teeWriter != nil && m.cfg.TeeFormat == "raw" {
 			m.teeWriter.WriteLine(string(msg))
+		}
+		if m.teeWriter != nil && m.cfg.TeeFormat == "display" {
+			m.formatAndWriteDisplayTee(entry)
 		}
 		return m, nil
 
@@ -127,6 +136,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.spinnerFrame++
+		for _, entry := range m.pendingLines {
+			m.buf.Push(entry.Text)
+		}
+		m.pendingLines = nil
 		return m, tickSpinner()
 
 	case eofMsg:
@@ -212,13 +225,29 @@ func (m model) View() string {
 
 	title := "slit"
 
-	if m.teeWriter != nil && m.cfg.TeeFormat == "display" {
-		for _, fl := range formattedLines {
-			m.teeWriter.WriteLine(fl)
-		}
+	return RenderLayout(layout, title, content, status, m.width)
+}
+
+func (m model) formatAndWriteDisplayTee(entry LineEntry) {
+	line := entry.Text
+	shouldStrip := m.cfg.Color == "never" || (m.cfg.Color == "auto" && !m.isStderrTTY)
+	if shouldStrip {
+		line = StripANSI(line)
 	}
 
-	return RenderLayout(layout, title, content, status, m.width)
+	padW := m.lineNumPadWidth()
+	var sb strings.Builder
+	if m.cfg.Timestamp {
+		ts := entry.Time.Format("15:04:05")
+		sb.WriteString(ts)
+		sb.WriteString(" ")
+	}
+	if m.cfg.LineNumbers {
+		numStr := strconv.Itoa(entry.LineNum)
+		sb.WriteString(fmt.Sprintf("%*s ", padW, numStr))
+	}
+	sb.WriteString(line)
+	m.teeWriter.WriteLine(sb.String())
 }
 
 func (m model) gutterWidth() int {
@@ -261,7 +290,7 @@ func (m model) formatEntries(entries []LineEntry, dataWidth int, shouldStrip boo
 			if shouldStrip {
 				sublines = WrapLine(line, dataWidth)
 			} else {
-				sublines = []string{TrimLineANSI(line, dataWidth, m.cfg.TruncationChar)}
+				sublines = WrapLineANSI(line, dataWidth)
 			}
 		} else {
 			if shouldStrip {

@@ -68,22 +68,6 @@ func TestWrapLine_empty(t *testing.T) {
 	}
 }
 
-func TestFormatLineWithNumber(t *testing.T) {
-	got := FormatLineWithNumber("hello", 42, 4)
-	want := "  42 hello"
-	if got != want {
-		t.Errorf("FormatLineWithNumber(%q, 42, 4) = %q, want %q", "hello", got, want)
-	}
-}
-
-func TestFormatLineWithTimestamp(t *testing.T) {
-	got := FormatLineWithTimestamp("hello", "12:34:56")
-	want := "12:34:56 hello"
-	if got != want {
-		t.Errorf("FormatLineWithTimestamp(%q, %q) = %q, want %q", "hello", "12:34:56", got, want)
-	}
-}
-
 func TestStripANSI(t *testing.T) {
 	input := "\x1b[31mred\x1b[0m text"
 	got := StripANSI(input)
@@ -127,5 +111,62 @@ func TestTrimLineANSI_withAnsi(t *testing.T) {
 	wantStripped := "hello w…"
 	if stripped != wantStripped {
 		t.Errorf("TrimLineANSI stripped = %q, want %q", stripped, wantStripped)
+	}
+}
+
+func TestWrapLineANSI_noAnsi(t *testing.T) {
+	got := WrapLineANSI("hello world", 5)
+	want := []string{"hello", " worl", "d"}
+	if len(got) != len(want) {
+		t.Fatalf("WrapLineANSI length = %d, want %d", len(got), len(want))
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("WrapLineANSI[%d] = %q, want %q", i, got[i], want[i])
+		}
+	}
+}
+
+func TestWrapLineANSI_withAnsi(t *testing.T) {
+	input := "\x1b[31mhello world\x1b[0m"
+	got := WrapLineANSI(input, 5)
+	want := []string{"\x1b[31mhello\x1b[0m", "\x1b[31m worl\x1b[0m", "\x1b[31md\x1b[0m"}
+	if len(got) != len(want) {
+		t.Fatalf("WrapLineANSI length = %d, want %d", len(got), len(want))
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("WrapLineANSI[%d] = %q, want %q", i, got[i], want[i])
+		}
+	}
+}
+
+func TestWrapLineANSI_carryColor(t *testing.T) {
+	input := "ab\x1b[31mcdef"
+	got := WrapLineANSI(input, 3)
+	// ANSI sequences are part of the input, so they're included with the visible char that follows
+	// The color code appears before 'c', so both get added to the same line
+	want := []string{"ab\x1b[31mc\x1b[0m", "\x1b[31mdef"}
+	if len(got) != len(want) {
+		t.Fatalf("WrapLineANSI length = %d, want %d; got %v", len(got), len(want), got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("WrapLineANSI[%d] = %q, want %q", i, got[i], want[i])
+		}
+	}
+}
+
+func TestWrapLineANSI_empty(t *testing.T) {
+	got := WrapLineANSI("", 10)
+	if len(got) != 1 || got[0] != "" {
+		t.Errorf("WrapLineANSI(%q, 10) = %v, want [%q]", "", got, "")
+	}
+}
+
+func TestWrapLineANSI_zeroWidth(t *testing.T) {
+	got := WrapLineANSI("hello", 0)
+	if len(got) != 1 || got[0] != "hello" {
+		t.Errorf("WrapLineANSI(%q, 0) = %v, want [%q]", "hello", got, "hello")
 	}
 }
