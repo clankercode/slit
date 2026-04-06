@@ -6,9 +6,6 @@ A streaming terminal viewer — pipe stdout into a fixed-height pane that re-ren
 long-running-process | slit
 ```
 
-> [!NOTE]
-> **Status: pre-release.** Implementation is planned (see [`.plan/2026-04-06-anvil-creek/`](.plan/2026-04-06-anvil-creek/index.md)). Go implementation is in progress; Rust and C to follow.
-
 ---
 
 ## Why
@@ -17,6 +14,20 @@ You're running something that spews output and you want to **see it happen** wit
 
 Unlike `tail -f` (file only) or `less` (pager, not live), `slit` is purpose-built for streaming stdin in place.
 
+## Features
+
+- **Live rendering** at ~30fps with render debouncing
+- **6 layouts**: minimal, box, rounded, compact, quote, none
+- **Line numbers**, **timestamps**, **wrap mode**
+- **ANSI color passthrough** (`--color=auto|always|never`)
+- **Progress bar** auto-detected from file size; spinner + count for pipes
+- **Tee to file** while viewing (`-o file`, `--tee-format=raw|display`)
+- **Pipe-safe** — renders to stderr; passthrough when stderr isn't a TTY
+- **Terminal resize** via SIGWINCH
+- **Config file** (`~/.config/slit/config.toml`)
+- **Shell completions** for bash, zsh, fish
+- **3 implementations**: Go (Bubbletea), Rust (ratatui), C (raw ANSI)
+
 ## Quick Examples
 
 ```sh
@@ -24,21 +35,19 @@ Unlike `tail -f` (file only) or `less` (pager, not live), `slit` is purpose-buil
 make build 2>&1 | slit
 
 # Fixed 10-line pane with line numbers and timestamps
-tail -f /var/log/syslog | slit -n 10 -l --timestamp
+tail -f /var/log/syslog | slit -n 10 -l -t
 
 # Box layout, save output simultaneously
 pytest tests/ | slit --box -o results.log
 
-# Show progress bar (auto-detects file size)
-cat large-file.ndjson | slit --layout compact
+# Compact layout with wrap
+./scripts/slit-test-data gradient | slit --compact -w
 
 # Passthrough for piping (no layout when stderr isn't a tty)
 make build 2>&1 | slit | grep ERROR
 ```
 
 ## Layouts
-
-Pick a layout to trade screen real estate for visual structure.
 
 | Layout | Look | Extra lines | Side cost |
 |--------|------|:-----------:|:---------:|
@@ -109,7 +118,7 @@ Display
       --wrap               Wrap long lines instead of truncating
   -l, --line-numbers       Show line numbers
   -t, --timestamp          Prepend timestamp to each line
-      --truncation string  Truncation indicator (default: "…")
+      --truncation-char    Character for truncation indicator (default: "…")
 
 Color & Style
       --color string       ANSI passthrough: auto|always|never (default: auto)
@@ -118,50 +127,70 @@ Color & Style
 Output
   -o, --output file        Tee stdin to file
   -a, --append             Append to tee file instead of overwriting
+      --tee-format string  Tee format: raw|display (default: raw)
+
+Buffer
+      --max-lines int      Maximum lines to buffer (default: 50000)
 
 Meta
-      --debug              Write diagnostics to /tmp/slit-$PID.log
-      --config string      Config file path (default: ~/.config/slit/config.toml)
-      --completion string  Generate shell completions: bash|zsh|fish
+  -d, --debug              Write diagnostics to log file
+      --log-file string    Custom debug log file path
 ```
 
-> [!TIP]
-> All flags can be set persistently in `~/.config/slit/config.toml`. CLI flags take precedence.
-
-## Key Features
-
-- **Live rendering** at ~30fps with render debouncing
-- **Terminal resize** handled via SIGWINCH
-- **Progress bar** auto-detected from file size, spinner + count for pipes
-- **ANSI color passthrough** (`--color=auto|always|never`, like `bat`)
-- **Pipe-safe** — renders to stderr; when stderr isn't a TTY, falls back to passthrough
-- **Window title** set via OSC escape sequences
+> See [USAGE.md](USAGE.md) for comprehensive documentation including config file format, environment variables, and tips.
 
 ## Building
 
-Three implementations planned — Go (Bubbletea), Rust (ratatui), C (raw ANSI). Only Go is started.
+All three implementations are available. The Go build is the default.
+
+### Go (Bubbletea)
 
 ```sh
-just build          # all three
-just build-go       # go only
+cd go && go build -o slit .
+# or
+just build-go
+```
+
+### Rust (ratatui)
+
+```sh
+cd rust && cargo build --release
+```
+
+### C (raw ANSI)
+
+```sh
+cd c && make
 ```
 
 ## Installing
 
 ```sh
-just install-go     # builds and copies to ~/.local/bin
-```
+# Go
+just install-go
 
-> [!NOTE]
-> Requires [just](https://github.com/casey/just).
+# Rust
+cp rust/target/release/slit ~/.local/bin/slit
+
+# C
+cd c && make install PREFIX=~/.local
+```
 
 ## Testing
 
 ```sh
-just test-all       # unit + integration across all implementations
-```
+# Go unit tests
+just test-go
 
-Integration tests use [bats-core](https://github.com/bats-core/bats-core) and validate that all three binaries behave identically.
+# Integration tests (requires bats-core)
+just test-integration
+
+# C unit tests
+cd c && make test
+
+# Rust tests
+cd rust && cargo test
+```
 
 ## Shell Completions
 
@@ -171,6 +200,11 @@ slit completion zsh   > ~/.zfunc/_slit
 slit completion fish  > ~/.config/fish/completions/slit.fish
 ```
 
+## Documentation
+
+- [USAGE.md](USAGE.md) — comprehensive usage guide, config file format, all flags
+- [IDEAS.md](IDEAS.md) — feature status and roadmap
+
 ## License
 
-<!-- Add your license here -->
+MIT
