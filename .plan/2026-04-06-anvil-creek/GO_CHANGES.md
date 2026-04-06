@@ -1,110 +1,116 @@
 # Changes Made to Go Implementation
 
-## New Integration Tests Added
+## Enhancement Session (2026-04-06)
 
-### 1. Tee File Content Verification (`tests/integration/tee.bats`)
-Added 6 tests for `-o` flag functionality:
-- `-o file content verification - writes all input lines` - Verifies tee writes all stdin to file
-- `-o flag overwrites existing file by default` - Verifies overwrite behavior
-- `-a flag appends to existing file` - Verifies append mode
-- `--tee-format=display writes formatted output with timestamps` - Verifies display format includes HH:MM:SS
-- `--tee-format=display writes formatted output with line numbers` - Verifies display format includes line numbers
-- `--tee-format=raw writes raw input without formatting` - Verifies raw format excludes formatting
+### New Go Unit Tests
 
-### 2. Debug Logging Tests (`tests/integration/debug.bats`)
-Added 7 tests for debug functionality:
-- `--debug flag is accepted` - Flag acceptance
-- `--log-file flag is accepted` - Flag acceptance
-- `--debug creates log file with default path` - Creates log in /tmp/slit-<pid>.log
-- `--log-file creates log file at specified path` - Creates log at custom location
-- `debug log contains timestamp entries` - Each line starts with HH:MM:SS.mmm
-- `debug log tracks buffer statistics` - Logs totalLines at EOF
-- `debug log tracks window size` - Logs window dimensions on resize
+#### Config Tests (`go/config_test.go`) — 8 tests
+- `TestDefaultConfig` - Verifies all default config values
+- `TestMergeConfigOverrides` - All fields from file config override defaults
+- `TestMergeConfigNoOverride` - Empty file config leaves defaults unchanged
+- `TestMergeConfigPartial` - Only set fields override
+- `TestLoadConfigFileMissing` - Missing config returns empty without error
+- `TestLoadConfigFileExists` - Full TOML config parsed correctly
+- `TestApplyFileConfigNoFile` - Missing config doesn't alter defaults
+- `TestLoadConfigFileInvalidTOML` - Invalid TOML returns error
 
-### 3. Color Modes and Truncation Char (`tests/integration/color_truncation.bats`)
-Added 11 tests:
-- `--color=never flag is accepted`
-- `--color=always flag is accepted`
-- `--color=auto flag is accepted`
-- `--color=never strips ANSI codes` - Removes color codes from output
-- `--color=always preserves ANSI codes` - Keeps color codes in output
-- `--color=auto strips ANSI when stderr is not TTY` - Auto behavior
-- `--truncation-char flag accepts custom character`
-- `--truncation-char accepts multi-byte character` (ellipsis)
-- `--truncation-char=~ is accepted`
-- `truncation char appears in output for long lines`
-- `default truncation char is ellipsis`
+#### Layout Tests (`go/layouts_test.go`) — 13 tests
+- `TestGetLayoutAll` - All 6 layout names resolve
+- `TestGetLayoutPanics` - Unknown layout panics
+- `TestLayoutChromeCosts` - Correct top/bottom/side costs for all layouts
+- `TestRenderLayoutBox` - Box corners and content present
+- `TestRenderLayoutRounded` - Rounded corners present
+- `TestRenderLayoutMinimal` - Content + status, no borders
+- `TestRenderLayoutNone` - Content only, no status
+- `TestRenderLayoutQuote` - Quote marker present
+- `TestRenderLayoutCompact` - Content and status present
+- `TestRenderLayoutBoxWidthAlignment` - All lines exactly N runes wide
+- `TestPadRight` / `TestPadRightOverflow` / `TestPadRightExact`
 
-### 4. Wrap Mode, Line Numbers, Timestamps (`tests/integration/wrap_lines.bats`)
-Added 13 tests:
-- `--wrap flag is accepted`
-- `-w short flag is accepted`
-- `wrap mode wraps long lines` - Long lines split across multiple terminal lines
-- `wrap mode preserves ANSI codes across wraps` - Color codes continue on wrapped lines
-- `-l flag is accepted`
-- `--line-numbers flag is accepted`
-- `line numbers appear in output` - Shows 1, 2, 3, etc.
-- `line numbers are right-aligned` - Proper padding for alignment
-- `-t flag is accepted`
-- `--timestamp flag is accepted`
-- `timestamps appear in HH:MM:SS format` - 24-hour format with leading zeros
-- `timestamps with line numbers both appear` - Both features work together
-- `wrap with line numbers works together` - Combined features
+#### Spinner Tests (`go/spinner_test.go`) — 13 tests
+- `TestGetSpinnerFrame*` - All 4 spinner styles (braille/dots/arrows/off)
+- `TestGetSpinnerFrameWraps` - Frame wraps around
+- `TestGetSpinnerFrameUnknown` - Unknown returns empty
+- `TestFormatStatusLineStreaming` - Non-EOF status line
+- `TestFormatStatusLineDone` - EOF status line
+- `TestFormatStatusLineProgress` - Progress bar with known file size
+- `TestFormatStatusLineProgressFull` - 100% progress
+- `TestFormatStatusLineZeroWidth` - Zero width doesn't crash
+- `TestFormatStatusLineNarrowWidth` - Truncates to narrow width
+- `TestFormatStatusLineSpinnerOff` - Spinner off hides frame
 
-### 5. Layout Rendering (`tests/integration/layout.bats`)
-Added 12 tests for visual layout verification:
-- `--layout=box renders box borders` - Uses ┌┐└┘─│ characters
-- `--layout=rounded renders rounded borders` - Uses ╭╮╰╯─│ characters
-- `--layout=compact renders compact style` - Has top bar with background color
-- `--layout=minimal renders minimal style` - Content + status line only
-- `--layout=none renders no borders` - Plain content only
-- `--layout=quote renders quote style` - Uses ▌ (left quarter block) marker
-- `--box shortcut renders box layout`
-- `--rounded shortcut renders rounded layout`
-- `--compact shortcut renders compact layout`
-- `--minimal shortcut renders minimal layout`
-- `--none shortcut renders no layout`
-- `--quote shortcut renders quote layout`
+#### Additional Render Tests (`go/render_test.go`) — 12 new tests
+- `TestTrimLine_widthOne` / `TestTrimLine_customTruncChar` / `TestTrimLine_multiByteTruncChar`
+- `TestStripANSI_multipleCodes` / `TestStripANSI_oscSequence`
+- `TestVisibleWidth_plain` / `TestVisibleWidth_unicode`
+- `TestWrapLine_exactSplit`
+- `TestTrimLineANSI_preservesColor` / `TestTrimLineANSI_truncatesWithColor`
+- `TestWrapLineANSI_multipleColors`
 
-### 6. EOF Behavior and Exit Codes (`tests/integration/eof.bats`)
-Added 10 tests for edge cases:
-- `empty input exits with code 0`
-- `single line input exits with code 0`
-- `multiple lines input exits with code 0`
-- `input without trailing newline exits with code 0`
-- `large input exits with code 0` (1000 lines)
-- `input with special characters exits with code 0` (tabs, newlines, carriage returns)
-- `input with unicode exits with code 0` (Hello 世界 🌍)
-- `EOF in render mode exits cleanly`
-- `multiple EOFs handled correctly`
-- `binary-safe input handling` (null bytes)
+### Go Benchmarks (`go/bench_test.go`) — 21 benchmarks
+Run via `go test -bench=. -benchmem`:
+- `BenchmarkRingBufferPush` — 46 ns/op, 0 allocs
+- `BenchmarkRingBufferPushEvict` — 46 ns/op, 0 allocs
+- `BenchmarkRingBufferLast` — 190 ns/op, 1 alloc
+- `BenchmarkRingBufferLines` — 636 µs/op (full 50k buffer)
+- `BenchmarkTrimLine` — 711 ns/op (200-char line)
+- `BenchmarkTrimLineShort` — 5.6 ns/op (short-circuit path)
+- `BenchmarkTrimLineANSI` — 1.5 µs/op
+- `BenchmarkWrapLineANSI` — 2.5 µs/op
+- `BenchmarkWrapLineANSIColor` — 2.8 µs/op
+- `BenchmarkStripANSI` — 740 ns/op
+- `BenchmarkStripANSIHeavy` — 10 µs/op (50 color codes)
+- `BenchmarkVisibleWidth` — 376 ns/op
+- `BenchmarkFormatStatusLine` — 407 ns/op
+- `BenchmarkFormatStatusLineEOF` — 329 ns/op
+- `BenchmarkRenderLayoutMinimal` — 100 ns/op
+- `BenchmarkRenderLayoutBox` — 3.4 µs/op
+- `BenchmarkFullRenderCycle` — 6.5 µs/op (20-line minimal)
+- `BenchmarkFullRenderCycleBox` — 11 µs/op
+- `BenchmarkFullRenderCycleWithANSI` — 10 µs/op
+- `BenchmarkFullRenderCycleWrap` — 62 µs/op (long lines)
+- `BenchmarkFullRenderCycleLineNumbers` — 8.8 µs/op
+
+### New Integration Tests (`tests/integration/spinner_progress.bats`) — 24 tests
+- Spinner style acceptance (braille/dots/arrows/off)
+- Status line shows "Streaming" during render
+- Status line shows "Done" after EOF
+- Status line shows line count
+- Status line shows "q:quit" hint
+- spinner=off hides braille frames
+- Progress bar for file input
+- `--max-lines` flag acceptance
+- Config file loads layout from TOML
+- CLI flags override config file
+- Missing config file uses defaults
+- Config file sets spinner style
+- Rendering shows content in output
+- Last N lines shown when more input
+- Window title OSC escape on startup
+
+### --help Polish
+- Added `Example` section to cobra root command with 3 usage examples matching cli.md spec
+
+### Code Quality
+- `go vet ./...` — clean
+- `gofmt -d .` — no diffs
+- No dead code or unused imports found
 
 ## Test Summary
 
-| Category | Tests | TTY Required |
-|----------|-------|--------------|
-| Tee | 11 | 6 |
-| Debug | 7 | 5 |
-| Color/Truncation | 11 | 5 |
-| Wrap/Lines/Timestamps | 13 | 8 |
-| Layout | 12 | 12 |
-| EOF | 10 | 1 |
-| **Total** | **64** | **37** |
-
-**Note**: Tests marked "TTY only" skip in CI environments where `SLIT_TEST_TTY` is not set. These require an actual terminal to run the Bubble Tea TUI.
-
-## CI Configuration
-
-Created `.github/workflows/ci.yml` with the following jobs:
-
-1. **Build Go binary** - Compiles the `slit` binary
-2. **Run Go unit tests** - Executes `go test -v ./...`
-3. **Run Go vet** - Static analysis with `go vet ./...`
-4. **Check Go formatting** - Validates code with `gofmt`
-5. **Run integration tests** - Executes bats tests (non-TTY tests run, TTY tests skip)
-6. **Upload test results** - Artifacts preserved on failure
-
-Triggers on push/PR to `main` and `master` branches.
+| Category | Count |
+|----------|-------|
+| Go unit tests (buffer) | 15 |
+| Go unit tests (render + maze) | 23 |
+| Go unit tests (config) | 8 |
+| Go unit tests (layouts) | 13 |
+| Go unit tests (spinner) | 13 |
+| **Go unit total** | **72** |
+| Integration tests (existing) | 84 |
+| Integration tests (new) | 24 |
+| **Integration total** | **108** |
+| Go benchmarks | 21 |
+| **Grand total** | **201** |
 
 ## Behavior Clarifications for Rust/C Implementations
 
@@ -169,6 +175,10 @@ Triggers on push/PR to `main` and `master` branches.
 - `none`: Content only, no decorations
 - `quote`: Left border with ▌ marker
 
+**Window Title**:
+- Sets OSC escape `\x1b]0;slit\x07` on startup (only when stderr is TTY and layout is not "none")
+- Resets title to empty `\x1b]0;\x07` on exit
+
 ### Exit Codes
 
 - `0`: Success (normal exit after EOF or 'q'/Ctrl+C)
@@ -182,19 +192,21 @@ Triggers on push/PR to `main` and `master` branches.
 
 ## File Locations
 
-- **Tests**: `tests/integration/*.bats`
+- **Source**: `go/*.go` (main, config, buffer, model, render, layouts, spinner, tee, debug)
+- **Unit Tests**: `go/*_test.go` (buffer_test, render_test, maze_test, config_test, layouts_test, spinner_test, bench_test)
+- **Integration Tests**: `tests/integration/*.bats`
   - `tee.bats` - Tee file writing tests
   - `debug.bats` - Debug logging tests
   - `color_truncation.bats` - Color and truncation tests
   - `wrap_lines.bats` - Wrap, line numbers, timestamps tests
   - `layout.bats` - Layout rendering tests
   - `eof.bats` - EOF behavior tests
-  - `flags.bats` - Flag validation tests (existing)
-  - `passthrough.bats` - Basic passthrough tests (existing)
-  - `completions.bats` - Shell completion tests (existing)
+  - `flags.bats` - Flag validation tests
+  - `passthrough.bats` - Basic passthrough tests
+  - `completions.bats` - Shell completion tests
+  - `spinner_progress.bats` - Spinner, progress bar, config file, rendering, window title tests
   - `helpers.bash` - Test utilities
 - **CI**: `.github/workflows/ci.yml`
-- **Source**: `go/*.go`
 - **Documentation**: `.plan/2026-04-06-anvil-creek/GO_CHANGES.md` (this file)
 
 ## Notes for Rust/C Teams
@@ -208,3 +220,4 @@ Triggers on push/PR to `main` and `master` branches.
 7. **Layout Rendering**: Box-drawing characters are Unicode, not ASCII
 8. **Integration Tests**: Use `bats` framework for shell-level testing
 9. **CI Strategy**: TTY-dependent tests should skip in CI, run locally with `SLIT_TEST_TTY=1`
+10. **Benchmarks**: Use Go benchmarks as performance reference targets

@@ -44,6 +44,7 @@ var rootCmd = &cobra.Command{
 	Short:   "A streaming terminal viewer",
 	Long:    "slit reads stdin into a fixed-height pane, trims lines to terminal width, and re-renders on each new line.",
 	Version: version,
+	Example: "  tail -f /var/log/syslog | slit\n  dmesg | slit -n 20 --line-numbers\n  build-command 2>&1 | slit --compact -o build.log",
 	Run: func(cmd *cobra.Command, args []string) {
 		if flagGenerateMan {
 			header := &cobradoc.GenManHeader{
