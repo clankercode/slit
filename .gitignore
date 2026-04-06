@@ -1,0 +1,5 @@
+go/slit
+rust/target/
+c/slit
+target/
+*.o
