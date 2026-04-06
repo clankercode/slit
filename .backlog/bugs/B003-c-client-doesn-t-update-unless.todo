@@ -1,14 +1,15 @@
 ---
 claimed_at: "2026-04-06T12:50:23Z"
 claimed_by: cli-user
-completed_at: null
+completed_at: "2026-04-06T12:52:34Z"
 complexity: medium
 depends_on: []
+duration_minutes: 2.1882096587166666
 estimate_hours: 1
 id: B003
 priority: high
 started_at: "2026-04-06T12:50:23Z"
-status: in_progress
+status: done
 tags: []
 title: c client doesn't update unless stdin updates, it should always update though even if nothing is being written to stdin. (same for rust and go, didn't check those)
 ---
