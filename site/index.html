@@ -17,14 +17,14 @@
       --surface2:    #121212;
       --border:      #1a1a1a;
       --border2:     #242424;
-      --text:        #b0b0b0;
-      --dim:         #444;
-      --faint:       #222;
+      --text:        #c8c8c8;
+      --dim:         #666;
+      --faint:       #333;
       --accent:      #00e5ff;
       --accent-lo:   rgba(0,229,255,0.08);
       --accent-mid:  rgba(0,229,255,0.18);
-      --stream:      #1c301c;
-      --stream-hi:   #2a4a2a;
+      --stream:      #2a5a3a;
+      --stream-hi:   #3a7a4a;
       --font:        'JetBrains Mono', monospace;
     }
 
@@ -96,6 +96,21 @@
       z-index: 0;
     }
 
+    #stream-bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 25% 50%, rgba(0,229,255,0.03) 0%, transparent 50%),
+                  radial-gradient(ellipse at 75% 50%, rgba(0,229,255,0.02) 0%, transparent 50%);
+      animation: aurora 10s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+
+    @keyframes aurora {
+      0%   { opacity: 0.3; transform: translateX(-2%); }
+      100% { opacity: 1;   transform: translateX(2%); }
+    }
+
     #stream-text {
       position: absolute;
       bottom: 0; left: 0; right: 0;
@@ -125,25 +140,73 @@
       opacity: 0;
       pointer-events: none;
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
-    #clip-chrome::before {
-      content: '$ tail -f pipeline.log | slit --box';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 1.7em;
+
+    #chrome-titlebar {
+      height: 2.2em;
       background: var(--accent-lo);
       border-bottom: 1px solid rgba(0,229,255,0.2);
       display: flex;
       align-items: center;
-      padding: 0 0.7em;
-      font-size: 0.72rem;
-      color: rgba(0,229,255,0.5);
-      display: block;
-      line-height: 1.7em;
+      padding: 0 0.8em;
+      gap: 0.65em;
+      flex-shrink: 0;
     }
+
+    #chrome-dots {
+      display: flex;
+      gap: 0.45em;
+    }
+
+    .chrome-dot {
+      width: 0.7em;
+      height: 0.7em;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .chrome-dot.red    { background: #ff5f57; }
+    .chrome-dot.yellow { background: #febc2e; }
+    .chrome-dot.green  { background: #28c840; }
+
+    #chrome-title-text {
+      font-size: 0.68rem;
+      color: rgba(0,229,255,0.5);
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #chrome-cursor-char {
+      color: var(--accent);
+      font-size: 0.75rem;
+      animation: cursor-blink 1s step-end infinite;
+    }
+
+    @keyframes cursor-blink {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: 0; }
+    }
+
+    #chrome-body {
+      flex: 1;
+      overflow: hidden;
+      padding: 0.4em 0.8em;
+      font-size: 0.62rem;
+      line-height: 1.55;
+      color: rgba(0,229,255,0.25);
+      background: rgba(0,0,0,0.3);
+    }
+
+    #chrome-body div {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     #chrome-status {
-      position: absolute;
-      bottom: 0; left: 0; right: 0;
       height: 1.7em;
       background: var(--accent-lo);
       border-top: 1px solid rgba(0,229,255,0.25);
@@ -155,6 +218,7 @@
       color: var(--accent);
       white-space: nowrap;
       overflow: hidden;
+      flex-shrink: 0;
     }
     .chrome-sep {
       color: rgba(0,229,255,0.25);
@@ -188,6 +252,12 @@
       position: relative;
       display: inline-block;
       user-select: none;
+      animation: title-glow 6s ease-in-out infinite;
+    }
+
+    @keyframes title-glow {
+      0%, 100% { text-shadow: none; }
+      50%      { text-shadow: 0 -2px 30px rgba(0,229,255,0.08), 0 0 60px rgba(0,229,255,0.04); }
     }
 
     #slit-cut {
@@ -219,17 +289,57 @@
     #hero-install {
       margin-top: 2.5rem;
       display: inline-flex;
-      align-items: center;
-      gap: 0.8em;
+      flex-direction: column;
+      align-items: stretch;
       border: 1px solid var(--border2);
       background: var(--surface);
-      padding: 0.55em 0.9em 0.55em 1em;
+      overflow: hidden;
     }
-    #hero-install code {
-      color: var(--accent);
-      font-size: 0.78rem;
+
+    #install-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .install-tab {
+      flex: 1;
+      background: none;
+      border: none;
+      border-right: 1px solid var(--border);
+      color: var(--dim);
       font-family: var(--font);
+      font-size: 0.68rem;
+      padding: 0.4em 1em;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      transition: color 0.15s, background 0.15s;
     }
+    .install-tab:last-child { border-right: none; }
+    .install-tab:hover { color: var(--text); }
+    .install-tab.active {
+      color: var(--accent);
+      background: var(--accent-lo);
+    }
+
+    #install-cmd-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.8em;
+      padding: 0.55em 0.9em 0.55em 1em;
+      max-width: 90vw;
+    }
+
+    #install-cmd {
+      color: var(--accent);
+      font-size: 0.72rem;
+      font-family: var(--font);
+      white-space: nowrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    #install-cmd::-webkit-scrollbar { display: none; }
+
     #copy-btn {
       background: none;
       border: 1px solid var(--border2);
@@ -241,6 +351,8 @@
       text-transform: uppercase;
       letter-spacing: 0.1em;
       transition: color 0.15s, border-color 0.15s;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
     #copy-btn:hover { color: var(--accent); border-color: var(--accent); }
     #copy-btn.copied { color: #00ff88; border-color: #00ff88; }
@@ -614,6 +726,11 @@
       nav { padding: 0.9rem 1.25rem; }
       .nav-links { gap: 1.25rem; }
       .nav-links li:nth-child(3), .nav-links li:nth-child(4) { display: none; }
+      #hero-title { font-size: clamp(4rem, 18vw, 9rem); }
+      #hero-install { max-width: 92vw; }
+      #install-cmd { font-size: 0.58rem; }
+      #chrome-body { display: none; }
+      #stream-text { padding: 1rem 1.25rem; font-size: 0.7rem; }
     }
   </style>
 </head>
@@ -634,29 +751,37 @@
 <!-- ──────────────────── HERO ─────────────────── -->
 <section id="hero">
 
-  <!-- streaming text background -->
   <div id="stream-bg">
     <div id="stream-text"></div>
   </div>
 
-  <!-- 4 panels that squeeze inward -->
   <div class="panel" id="panel-top"></div>
   <div class="panel" id="panel-bottom"></div>
   <div class="panel" id="panel-left"></div>
   <div class="panel" id="panel-right"></div>
 
-  <!-- terminal chrome (appears after panels settle) -->
   <div id="clip-chrome">
+    <div id="chrome-titlebar">
+      <div id="chrome-dots">
+        <span class="chrome-dot red"></span>
+        <span class="chrome-dot yellow"></span>
+        <span class="chrome-dot green"></span>
+      </div>
+      <span id="chrome-title-text">pipeline.log — slit</span>
+      <span id="chrome-cursor-char">▊</span>
+    </div>
+    <div id="chrome-body"></div>
     <div id="chrome-status">
       <span id="spin-char">⠋</span>
       <span id="line-ct">0 lines</span>
       <span class="chrome-sep">│</span>
       <span id="chrome-rate">0 B/s</span>
-      <span id="chrome-keys">q quit  ^C exit  -b --box  -r --rounded  -c --compact</span>
+      <span class="chrome-sep">│</span>
+      <span id="chrome-file">pipeline.log</span>
+      <span id="chrome-keys">q quit  ^C exit  / search  G end</span>
     </div>
   </div>
 
-  <!-- post-animation title -->
   <div id="hero-content">
     <h1 id="hero-title">
       SLIT
@@ -664,8 +789,15 @@
     </h1>
     <p id="hero-tagline">stream viewer for the terminal</p>
     <div id="hero-install">
-      <code id="install-cmd">go install github.com/clankercode/slit/go@latest</code>
-      <button id="copy-btn" onclick="copyInstall()">copy</button>
+      <div id="install-tabs">
+        <button class="install-tab active" onclick="switchInstall('c', this)">C</button>
+        <button class="install-tab" onclick="switchInstall('rust', this)">Rust</button>
+        <button class="install-tab" onclick="switchInstall('go', this)">Go</button>
+      </div>
+      <div id="install-cmd-wrap">
+        <code id="install-cmd">curl -sL https://github.com/clankercode/slit/releases/latest/download/slit-c-linux-x86_64.tar.gz | tar xz && sudo mv slit /usr/local/bin/</code>
+        <button id="copy-btn" onclick="copyInstall()">copy</button>
+      </div>
     </div>
   </div>
 
@@ -888,8 +1020,30 @@
 (function() {
 'use strict';
 
-// ── streaming text content ──────────────────────────────────────
-const LINES = [
+var INSTALL_CMDS = {
+  c: 'curl -sL https://github.com/clankercode/slit/releases/latest/download/slit-c-linux-x86_64.tar.gz | tar xz && sudo mv slit /usr/local/bin/',
+  rust: 'cargo install slitty',
+  go: 'go install github.com/clankercode/slit/go@latest'
+};
+
+window.switchInstall = function(lang, btn) {
+  document.querySelectorAll('.install-tab').forEach(function(t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  document.getElementById('install-cmd').textContent = INSTALL_CMDS[lang];
+};
+
+var CHROME_LINES = [
+  '  1 \u2502 14:32:01 [INFO]  server started on :8080',
+  '  2 \u2502 14:32:01 [DEBUG] accepted connection fd=47',
+  '  3 \u2502 14:32:02 [INFO]  processed batch: 10,000 records',
+  '  4 \u2502 14:32:02 [WARN]  queue depth: 47,291',
+  '  5 \u2502 14:32:03 [INFO]  checkpoint saved to /var/data/cp-0042',
+  '  6 \u2502 14:32:03 [INFO]  flushed 8,192 bytes to disk',
+  '  7 \u2502 14:32:03 [INFO]  health check: OK (2ms)',
+  '  8 \u2502 14:32:04 [DEBUG] gc cycle: freed 2.1 MB'
+];
+
+var LINES = [
   'cargo build --release',
   '   Compiling slit v0.1.0 (/home/user/slit/rust)',
   '   Compiling tokio v1.35.1',
@@ -920,21 +1074,21 @@ const LINES = [
   '2024-01-15 14:32:01.891 [DEBUG] accepted connection fd=47 addr=127.0.0.1:54321',
   '2024-01-15 14:32:02.103 [DEBUG] buffer: 1,024/50,000 lines active',
   '2024-01-15 14:32:02.441 [INFO]  processed batch: 10,000 records in 0.087s',
-  '2024-01-15 14:32:02.882 [WARN]  queue depth: 47,291 — consider scaling',
+  '2024-01-15 14:32:02.882 [WARN]  queue depth: 47,291 \u2014 consider scaling',
   '2024-01-15 14:32:03.001 [INFO]  checkpoint saved to /var/data/cp-0042',
   '2024-01-15 14:32:03.334 [INFO]  flushed 8,192 bytes to disk',
   'go build -ldflags="-s -w" ./...',
   'running integration suite...',
-  '  ✓ pipe passthrough (2ms)',
-  '  ✓ terminal resize via SIGWINCH (5ms)',
-  '  ✓ ctrl+c clean exit (1ms)',
-  '  ✓ box layout dimensions (3ms)',
-  '  ✓ rounded layout dimensions (3ms)',
-  '  ✓ line numbers with -l flag (2ms)',
-  '  ✓ timestamps with -t flag (4ms)',
-  '  ✓ tee to file with -o flag (8ms)',
-  '  ✓ append mode with -a flag (6ms)',
-  '  ✓ passthrough when no tty (1ms)',
+  '  \u2713 pipe passthrough (2ms)',
+  '  \u2713 terminal resize via SIGWINCH (5ms)',
+  '  \u2713 ctrl+c clean exit (1ms)',
+  '  \u2713 box layout dimensions (3ms)',
+  '  \u2713 rounded layout dimensions (3ms)',
+  '  \u2713 line numbers with -l flag (2ms)',
+  '  \u2713 timestamps with -t flag (4ms)',
+  '  \u2713 tee to file with -o flag (8ms)',
+  '  \u2713 append mode with -a flag (6ms)',
+  '  \u2713 passthrough when no tty (1ms)',
   'all 10 integration tests passed in 35ms',
   'benchmark: 1,000,000 lines / plain input / linux x86_64',
   '  C    : 1.03M lines/sec   151.8 MB/s   14.5 MB peak',
@@ -947,11 +1101,11 @@ const LINES = [
   '[2024-01-15 14:32:05.901] partition 1: offset 9,124,773',
   '[2024-01-15 14:32:05.902] partition 2: offset 7,891,204',
   'transforming: 10,000 records/batch',
-  '▸ 10,000 records written (0.083s)',
-  '▸ 20,000 records written (0.171s)',
-  '▸ 30,000 records written (0.254s)',
-  '▸ 40,000 records written (0.338s)',
-  '▸ 50,000 records written (0.421s)',
+  '\u25b8 10,000 records written (0.083s)',
+  '\u25b8 20,000 records written (0.171s)',
+  '\u25b8 30,000 records written (0.254s)',
+  '\u25b8 40,000 records written (0.338s)',
+  '\u25b8 50,000 records written (0.421s)',
   'docker build -t myapp:latest .',
   'Step 1/8 : FROM rust:1.75-slim',
   'Step 2/8 : WORKDIR /app',
@@ -971,10 +1125,10 @@ const LINES = [
   '$ tail -f /var/log/app.log | slit --compact -l',
   '  1 | INFO  started service on port 8080',
   '  2 | DEBUG init complete in 12ms',
-  '  3 | INFO  GET /health → 200 (1.2ms)',
-  '  4 | INFO  GET /api/v1/data → 200 (4.8ms)',
+  '  3 | INFO  GET /health \u2192 200 (1.2ms)',
+  '  4 | INFO  GET /api/v1/data \u2192 200 (4.8ms)',
   '  5 | DEBUG gc cycle: freed 2.1 MB in 0.4ms',
-  '  6 | INFO  POST /api/v1/events → 204 (0.9ms)',
+  '  6 | INFO  POST /api/v1/events \u2192 204 (0.9ms)',
   '  7 | WARN  high latency: /api/v1/query took 312ms',
   '$ git log --oneline -8',
   'd408e4f B002/B003 fixes: keyboard input and spinner animation',
@@ -987,25 +1141,23 @@ const LINES = [
   '$ ./run-all-benchmarks.sh 2>&1 | slit -l -t',
 ];
 
-const streamEl = document.getElementById('stream-text');
+var streamEl = document.getElementById('stream-text');
 
-let lineIdx = 0;
-let lastLineMs = 0;
-let lineIntervalMs = 70; // fast at start
+var lineIdx = 0;
+var lastLineMs = 0;
+var lineIntervalMs = 70;
 
 function addStreamLine() {
-  const div = document.createElement('div');
+  var div = document.createElement('div');
   div.textContent = LINES[lineIdx % LINES.length];
   lineIdx++;
   streamEl.appendChild(div);
-  // keep max 120 lines in dom — stream-bg overflow:hidden clips the top naturally
   while (streamEl.children.length > 120) {
     streamEl.removeChild(streamEl.firstChild);
   }
 }
 
-// pre-populate so the stream looks full on load
-for (let i = 0; i < 90; i++) addStreamLine();
+for (var i = 0; i < 90; i++) addStreamLine();
 
 function streamLoop(ts) {
   if (ts - lastLineMs >= lineIntervalMs) {
@@ -1016,58 +1168,55 @@ function streamLoop(ts) {
 }
 requestAnimationFrame(streamLoop);
 
-// ── spinner logic ───────────────────────────────────────────────
-const BRAILLE = ['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'];
-let spinIdx = 0;
-const spinEl = document.getElementById('spin-char');
-const lineCtEl = document.getElementById('line-ct');
-const rateEl = document.getElementById('chrome-rate');
+var BRAILLE = ['\u280b','\u2819','\u2839','\u2838','\u283c','\u2834','\u2826','\u2827','\u2807','\u280f'];
+var spinIdx = 0;
+var spinEl = document.getElementById('spin-char');
+var lineCtEl = document.getElementById('line-ct');
+var rateEl = document.getElementById('chrome-rate');
+var chromeBodyEl = document.getElementById('chrome-body');
+var lastChromeLine = -1;
 
 function formatCount(n) {
   if (n >= 1000) return (n/1000).toFixed(1) + 'k';
   return String(n);
 }
 
-// ── panel / animation ───────────────────────────────────────────
-const panTop   = document.getElementById('panel-top');
-const panBot   = document.getElementById('panel-bottom');
-const panLeft  = document.getElementById('panel-left');
-const panRight = document.getElementById('panel-right');
-const chrome   = document.getElementById('clip-chrome');
-const heroContent = document.getElementById('hero-content');
-const heroScroll  = document.getElementById('hero-scroll');
-const slitCut     = document.getElementById('slit-cut');
+var panTop   = document.getElementById('panel-top');
+var panBot   = document.getElementById('panel-bottom');
+var panLeft  = document.getElementById('panel-left');
+var panRight = document.getElementById('panel-right');
+var chrome   = document.getElementById('clip-chrome');
+var heroContent = document.getElementById('hero-content');
+var heroScroll  = document.getElementById('hero-scroll');
+var slitCut     = document.getElementById('slit-cut');
 
-// timing (ms)
-const T_PANELS_START  = 400;
-const T_PANELS_DUR    = 1900;
-const T_CHROME_START  = T_PANELS_START + T_PANELS_DUR + 100; // 2400
-const T_CHROME_DUR    = 200;
-const T_SPIN_START    = T_CHROME_START + T_CHROME_DUR;       // 2600
-const T_SPIN_DUR      = 2200;                                // chrome dwells: 2600→4800
-const T_FADE_START    = T_SPIN_START + T_SPIN_DUR;           // 4800
-const T_FADE_DUR      = 700;
-const T_TITLE_START   = T_FADE_START + T_FADE_DUR + 150;     // 5650
-const T_TITLE_DUR     = 1000;                                // slower reveal
-const T_CUT_START     = T_TITLE_START + T_TITLE_DUR - 80;    // 6570
-const T_SCROLL_START  = T_TITLE_START + T_TITLE_DUR + 500;   // 7150
+var T_PANELS_START  = 400;
+var T_PANELS_DUR    = 1900;
+var T_CHROME_START  = T_PANELS_START + T_PANELS_DUR + 100;
+var T_CHROME_DUR    = 200;
+var T_SPIN_START    = T_CHROME_START + T_CHROME_DUR;
+var T_SPIN_DUR      = 2200;
+var T_FADE_START    = T_SPIN_START + T_SPIN_DUR;
+var T_FADE_DUR      = 700;
+var T_TITLE_START   = T_FADE_START + T_FADE_DUR + 150;
+var T_TITLE_DUR     = 1000;
+var T_CUT_START     = T_TITLE_START + T_TITLE_DUR - 80;
+var T_SCROLL_START  = T_TITLE_START + T_TITLE_DUR + 500;
 
-// panel positions (%)
-const P_START = { t: 2, b: 2, l: 2, r: 2 };
-const P_END   = { t: 32, b: 32, l: 10, r: 10 };
+var P_START = { t: 2, b: 2, l: 2, r: 2 };
+var P_END   = { t: 32, b: 32, l: 10, r: 10 };
 
 function ease(t) {
-  // cubic ease-in-out
   return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2;
 }
 
 function lerp(a, b, t) { return a + (b - a) * t; }
 function clamp01(x) { return Math.max(0, Math.min(1, x)); }
 
-let animStart = null;
-let spinInterval = null;
-let lineCount = 0;
-let chromeVisible = false;
+var animStart = null;
+var spinInterval = null;
+var lineCount = 0;
+var chromeVisible = false;
 
 function setPanel(el, dim, val) {
   el.style[dim] = val + '%';
@@ -1082,17 +1231,16 @@ function syncChrome(t, b, l, r) {
 
 function animFrame(ts) {
   if (!animStart) animStart = ts;
-  const elapsed = ts - animStart;
+  var elapsed = ts - animStart;
 
-  // ── Phase: panels squeeze ──
   if (elapsed >= T_PANELS_START) {
-    const raw = clamp01((elapsed - T_PANELS_START) / T_PANELS_DUR);
-    const e = ease(raw);
+    var raw = clamp01((elapsed - T_PANELS_START) / T_PANELS_DUR);
+    var e = ease(raw);
 
-    const t = lerp(P_START.t, P_END.t, e);
-    const b = lerp(P_START.b, P_END.b, e);
-    const l = lerp(P_START.l, P_END.l, e);
-    const r = lerp(P_START.r, P_END.r, e);
+    var t = lerp(P_START.t, P_END.t, e);
+    var b = lerp(P_START.b, P_END.b, e);
+    var l = lerp(P_START.l, P_END.l, e);
+    var r = lerp(P_START.r, P_END.r, e);
 
     setPanel(panTop,   'height', t);
     setPanel(panBot,   'height', b);
@@ -1100,39 +1248,44 @@ function animFrame(ts) {
     setPanel(panRight, 'width',  r);
     syncChrome(t, b, l, r);
 
-    // slow stream as panels close
     lineIntervalMs = lerp(70, 220, ease(raw));
   }
 
-  // ── Phase: chrome fade in ──
   if (elapsed >= T_CHROME_START) {
-    const raw = clamp01((elapsed - T_CHROME_START) / T_CHROME_DUR);
-    chrome.style.opacity = String(ease(raw));
-    if (!chromeVisible && raw > 0) {
+    var cRaw = clamp01((elapsed - T_CHROME_START) / T_CHROME_DUR);
+    chrome.style.opacity = String(ease(cRaw));
+    if (!chromeVisible && cRaw > 0) {
       chromeVisible = true;
-      // start spinner
-      spinInterval = setInterval(() => {
+      spinInterval = setInterval(function() {
         spinIdx = (spinIdx + 1) % BRAILLE.length;
         spinEl.textContent = BRAILLE[spinIdx];
       }, 80);
     }
   }
 
-  // ── Phase: line counter tick ──
   if (elapsed >= T_SPIN_START) {
-    const raw = clamp01((elapsed - T_SPIN_START) / T_SPIN_DUR);
-    const targetCount = 47283;
-    lineCount = Math.floor(ease(raw) * targetCount);
+    var sRaw = clamp01((elapsed - T_SPIN_START) / T_SPIN_DUR);
+    var targetCount = 47283;
+    lineCount = Math.floor(ease(sRaw) * targetCount);
     lineCtEl.textContent = formatCount(lineCount) + ' lines';
 
-    const mbps = (ease(raw) * 9.8).toFixed(1);
+    var mbps = (ease(sRaw) * 9.8).toFixed(1);
     rateEl.textContent = mbps + ' MB/s';
+
+    var lineTarget = Math.floor(sRaw * CHROME_LINES.length);
+    if (lineTarget > lastChromeLine && lineTarget < CHROME_LINES.length) {
+      for (var ci = lastChromeLine + 1; ci <= lineTarget; ci++) {
+        var cdiv = document.createElement('div');
+        cdiv.textContent = CHROME_LINES[ci];
+        chromeBodyEl.appendChild(cdiv);
+      }
+      lastChromeLine = lineTarget;
+    }
   }
 
-  // ── Phase: fade everything out ──
   if (elapsed >= T_FADE_START) {
-    const raw = clamp01((elapsed - T_FADE_START) / T_FADE_DUR);
-    const op = 1 - ease(raw);
+    var fRaw = clamp01((elapsed - T_FADE_START) / T_FADE_DUR);
+    var op = 1 - ease(fRaw);
     chrome.style.opacity   = String(op);
     document.getElementById('stream-bg').style.opacity = String(op);
     panTop.style.opacity   = String(op);
@@ -1140,40 +1293,36 @@ function animFrame(ts) {
     panLeft.style.opacity  = String(op);
     panRight.style.opacity = String(op);
 
-    if (raw >= 1 && spinInterval) {
+    if (fRaw >= 1 && spinInterval) {
       clearInterval(spinInterval);
       spinInterval = null;
     }
   }
 
-  // ── Phase: SLIT title appears ──
   if (elapsed >= T_TITLE_START) {
-    const raw = clamp01((elapsed - T_TITLE_START) / T_TITLE_DUR);
-    const e = ease(raw);
-    const offset = lerp(28, 0, e);
-    heroContent.style.opacity   = String(e);
-    heroContent.style.transform = `translateY(calc(-50% + ${offset}px))`;
-    if (raw >= 0.5) heroContent.classList.add('visible');
+    var tRaw = clamp01((elapsed - T_TITLE_START) / T_TITLE_DUR);
+    var tE = ease(tRaw);
+    var offset = lerp(28, 0, tE);
+    heroContent.style.opacity   = String(tE);
+    heroContent.style.transform = 'translateY(calc(-50% + ' + offset + 'px))';
+    if (tRaw >= 0.5) heroContent.classList.add('visible');
   }
 
-  // ── Phase: slit-cut slash ──
   if (elapsed >= T_CUT_START) {
-    const raw = clamp01((elapsed - T_CUT_START) / 280);
-    const e = ease(raw);
-    slitCut.style.opacity         = String(Math.min(1, e * 3));
-    slitCut.style.transform       = `scaleX(${e})`;
+    var cutRaw = clamp01((elapsed - T_CUT_START) / 280);
+    var cutE = ease(cutRaw);
+    slitCut.style.opacity         = String(Math.min(1, cutE * 3));
+    slitCut.style.transform       = 'scaleX(' + cutE + ')';
   }
 
-  // ── Phase: scroll indicator ──
   if (elapsed >= T_SCROLL_START) {
-    const raw = clamp01((elapsed - T_SCROLL_START) / 400);
-    heroScroll.style.opacity = String(ease(raw) * 0.6);
+    var scRaw = clamp01((elapsed - T_SCROLL_START) / 400);
+    heroScroll.style.opacity = String(ease(scRaw) * 0.6);
   }
 
   requestAnimationFrame(animFrame);
 }
 
-// init panel positions
 setPanel(panTop,   'height', P_START.t);
 setPanel(panBot,   'height', P_START.b);
 setPanel(panLeft,  'width',  P_START.l);
@@ -1182,34 +1331,30 @@ syncChrome(P_START.t, P_START.b, P_START.l, P_START.r);
 
 requestAnimationFrame(animFrame);
 
-// ── copy install command ────────────────────────────────────────
 window.copyInstall = function() {
-  const cmd = document.getElementById('install-cmd').textContent;
-  navigator.clipboard.writeText(cmd).then(() => {
-    const btn = document.getElementById('copy-btn');
+  var cmd = document.getElementById('install-cmd').textContent;
+  navigator.clipboard.writeText(cmd).then(function() {
+    var btn = document.getElementById('copy-btn');
     btn.textContent = 'copied';
     btn.classList.add('copied');
-    setTimeout(() => {
+    setTimeout(function() {
       btn.textContent = 'copy';
       btn.classList.remove('copied');
     }, 2000);
-  }).catch(() => {
-    // fallback: select text
-    const range = document.createRange();
+  }).catch(function() {
+    var range = document.createRange();
     range.selectNode(document.getElementById('install-cmd'));
     window.getSelection().removeAllRanges();
     window.getSelection().addRange(range);
   });
 };
 
-// ── nav opaque on scroll ────────────────────────────────────────
-window.addEventListener('scroll', () => {
+window.addEventListener('scroll', function() {
   document.getElementById('nav').classList.toggle('opaque', window.scrollY > 60);
 }, { passive: true });
 
-// ── scroll reveal ───────────────────────────────────────────────
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(e => {
+var observer = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) {
     if (e.isIntersecting) {
       e.target.classList.add('in');
       observer.unobserve(e.target);
@@ -1217,7 +1362,7 @@ const observer = new IntersectionObserver((entries) => {
   });
 }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
 
-document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+document.querySelectorAll('.reveal').forEach(function(el) { observer.observe(el); });
 
 })();
 </script>
