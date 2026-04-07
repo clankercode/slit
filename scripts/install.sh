@@ -9,7 +9,14 @@ TMPDIR="${TMPDIR:-/tmp}"
 main() {
     need_cmd curl
     need_cmd tar
-    need_cmd sha256sum
+
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256_cmd="sha256sum"
+    elif command -v shasum >/dev/null 2>&1; then
+        sha256_cmd="shasum -a 256"
+    else
+        err "required command not found: sha256sum (or shasum)"
+    fi
 
     os="$(detect_os)"
     arch="$(detect_arch)"
@@ -41,7 +48,7 @@ main() {
     if [ -z "$expected" ]; then
         err "checksum not found for $artifact"
     fi
-    actual="$(sha256sum "$tmp/$artifact" | cut -d' ' -f1)"
+    actual="$($sha256_cmd "$tmp/$artifact" | cut -d' ' -f1)"
     if [ "$expected" != "$actual" ]; then
         err "checksum mismatch\n  expected: $expected\n  actual:   $actual"
     fi
