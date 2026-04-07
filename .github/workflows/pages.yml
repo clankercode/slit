@@ -21,16 +21,28 @@ jobs:
       - uses: actions/checkout@v4
       - name: Inject version and checksums
         run: |
-          VERSION=$(curl -sL "https://api.github.com/repos/${{ github.repository }}/releases/latest" | grep '"tag_name"' | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
-          echo "Latest version: ${VERSION:-unknown}"
+          echo "--- Fetching latest release version ---"
+          API_RESPONSE=$(curl -sL "https://api.github.com/repos/${{ github.repository }}/releases/latest")
+          echo "API response (first 500 chars):"
+          echo "$API_RESPONSE" | head -c 500
+          echo ""
+          VERSION=$(echo "$API_RESPONSE" | grep '"tag_name"' | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "Resolved version: ${VERSION:-unknown}"
           find site -name '*.html' -exec sed -i "s/{{VERSION}}/${VERSION:-dev}/g" {} +
 
+          echo "--- Fetching SHA256SUMS ---"
           SHA256SUMS_FILE=$(mktemp)
           if curl -sLf "https://github.com/${{ github.repository }}/releases/latest/download/SHA256SUMS" -o "$SHA256SUMS_FILE"; then
+            echo "SHA256SUMS downloaded successfully:"
+            cat "$SHA256SUMS_FILE"
             SHA256_C=$(grep -oP '^\K[a-f0-9]{64}(?=\s+slit-c-linux-x86_64\.tar\.gz$)' "$SHA256SUMS_FILE" || true)
             SHA256_C_STATIC=$(grep -oP '^\K[a-f0-9]{64}(?=\s+slit-c-linux-x86_64-static\.tar\.gz$)' "$SHA256SUMS_FILE" || true)
             SHA256_RUST=$(grep -oP '^\K[a-f0-9]{64}(?=\s+slit-rust-linux-x86_64\.tar\.gz$)' "$SHA256SUMS_FILE" || true)
             SHA256_GO=$(grep -oP '^\K[a-f0-9]{64}(?=\s+slit-go-linux-x86_64\.tar\.gz$)' "$SHA256SUMS_FILE" || true)
+            echo "C: ${SHA256_C:-MISSING}"
+            echo "C-static: ${SHA256_C_STATIC:-MISSING}"
+            echo "Rust: ${SHA256_RUST:-MISSING}"
+            echo "Go: ${SHA256_GO:-MISSING}"
             find site -name '*.html' -exec sed -i "s/{{SHA256_C}}/${SHA256_C:-see release page}/g" {} +
             find site -name '*.html' -exec sed -i "s/{{SHA256_C_STATIC}}/${SHA256_C_STATIC:-see release page}/g" {} +
             find site -name '*.html' -exec sed -i "s/{{SHA256_RUST}}/${SHA256_RUST:-see release page}/g" {} +
