@@ -25,7 +25,8 @@
             ${pkgs.gcc}/bin/gcc -O2 -Wall -Wextra -std=c11 -pedantic \
               -D_POSIX_C_SOURCE=200809L \
               -o slit c/main.c c/buffer.c c/terminal.c c/render.c \
-              c/layout.c c/spinner.c c/status.c c/tee.c c/debug.c c/completion.c
+              c/layout.c c/spinner.c c/status.c c/tee.c c/debug.c \
+              c/completion.c c/configfile.c
             runHook postBuild
           '';
 
@@ -43,13 +44,25 @@
           src = self;
           modRoot = "go";
 
-          vendorHash = pkgs.lib.fakeHash; # run `nix build .#slit-go` once, replace with the "got: sha256-..." from the error
+          vendorHash = pkgs.lib.fakeHash;
+        };
+
+        slit-rust = pkgs.rustPlatform.buildRustPackage {
+          pname = "slit";
+          version = self.shortRev or "dev";
+
+          src = self;
+
+          sourceRoot = "${self.name}/rust";
+          cargoLock.lockFile = self + "/rust/Cargo.lock";
+          cargoHash = pkgs.lib.fakeHash;
         };
       in {
         packages = {
           default = slit-c;
           slit-c = slit-c;
           slit-go = slit-go;
+          slit-rust = slit-rust;
         };
 
         devShells.default = pkgs.mkShell {
