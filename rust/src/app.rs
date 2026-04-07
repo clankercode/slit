@@ -397,7 +397,7 @@ impl App {
         };
 
         let all_lines =
-            layout::render_layout(layout, "slit", &display_lines, &status, self.width);
+            layout::render_layout(layout, "slit", &display_lines, &status, self.width, &self.config.quote_bg);
 
         let rat_lines: Vec<RatLine> = all_lines
             .iter()
