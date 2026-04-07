@@ -286,11 +286,16 @@ size_t trim_line(const char *src, char *dst, size_t dst_size, size_t width, cons
                     else if ((c & 0xF8) == 0xF0) bytes = 4;
                     int cw = char_width(src + si, bytes);
                     if (visible + (size_t)cw > target) break;
-                    for (size_t b = 0; b < bytes && si + b < src_len && di + 1 < dst_size; b++) {
-                        dst[di++] = src[si + b];
+                    if (di + bytes < dst_size) {
+                        for (size_t b = 0; b < bytes && si + b < src_len; b++) {
+                            dst[di++] = src[si + b];
+                        }
+                        si += bytes - 1;
+                        visible += (size_t)cw;
+                    } else {
+                        dst[di] = '\0';
+                        break;
                     }
-                    si += bytes - 1;
-                    visible += (size_t)cw;
                 } else {
                     if (di + 1 < dst_size) dst[di++] = src[si];
                 }

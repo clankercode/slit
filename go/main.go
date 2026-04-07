@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -66,7 +65,21 @@ var rootCmd = &cobra.Command{
 
 		forceRender := os.Getenv("SLIT_FORCE_RENDER") == "1"
 		if !forceRender && !term.IsTerminal(int(os.Stderr.Fd())) {
-			io.Copy(os.Stdout, os.Stdin)
+			var tw *TeeWriter
+			if cfg.Output != "" {
+				tw = NewTeeWriter(cfg.Output, cfg.Append)
+			}
+			scanner := bufio.NewScanner(os.Stdin)
+			for scanner.Scan() {
+				line := scanner.Text()
+				fmt.Println(line)
+				if tw != nil {
+					tw.WriteLine(line)
+				}
+			}
+			if tw != nil {
+				tw.Close()
+			}
 			return
 		}
 

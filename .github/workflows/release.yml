@@ -33,9 +33,11 @@ jobs:
 
       - name: Build C implementation (static musl)
         run: |
+          mv slit slit-dynamic
           make clean
           make build CC=musl-gcc CFLAGS="-Wall -Wextra -Werror -std=c11 -pedantic -D_POSIX_C_SOURCE=200809L -O2 -static"
           mv slit slit-static
+          mv slit-dynamic slit
         working-directory: c
 
       - name: Build Go implementation
@@ -51,8 +53,10 @@ jobs:
           strip -s c/slit
           strip -s c/slit-static
           upx --best c/slit-static
+          c/slit-static --version
           strip --strip-unneeded rust/target/release/slit
           upx --best rust/target/release/slit
+          rust/target/release/slit --version
 
       - name: Prepare release assets
         run: |

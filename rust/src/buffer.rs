@@ -109,13 +109,16 @@ mod tests {
     }
 
     #[test]
-    fn test_total_bytes_with_eviction() {
-        let mut buf = RingBuffer::new(2);
-        buf.push("abc".to_string());
-        buf.push("def".to_string());
-        assert_eq!(buf.total_bytes(), 6);
-        buf.push("ghi".to_string());
-        assert_eq!(buf.total_bytes(), 9);
+    fn test_total_bytes_cumulative_after_eviction() {
+        let mut buf = RingBuffer::new(3);
+        buf.push("short".to_string()); // 5, cumulative=5
+        assert_eq!(buf.total_bytes(), 5);
+        buf.push("a very long line here".to_string()); // 21, cumulative=26
+        assert_eq!(buf.total_bytes(), 26);
+        buf.push("x".to_string()); // 1, cumulative=27
+        assert_eq!(buf.total_bytes(), 27);
+        buf.push("yy".to_string()); // 2, evicts "short", cumulative=29
+        assert_eq!(buf.total_bytes(), 29);
     }
 
     #[test]

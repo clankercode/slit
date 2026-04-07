@@ -173,7 +173,7 @@ TEST(total_bytes_tracking) {
     ASSERT_EQ(buffer_total_bytes(b), 11);
     
     buffer_push(b, make_entry("extra", 4));      // Evicts "hello" (5 bytes), adds "extra" (5 bytes)
-    ASSERT_EQ(buffer_total_bytes(b), 11);        // Should still be 11
+    ASSERT_EQ(buffer_total_bytes(b), 16);        // Cumulative: 5+5+1+5 = 16
     
     buffer_free(b);
 }
@@ -203,6 +203,24 @@ TEST(null_safety) {
     buffer_free(NULL);
 }
 
+TEST(total_bytes_cumulative_after_eviction) {
+    struct ring_buffer *b = buffer_create(3);
+    buffer_push(b, make_entry("short", 1));                    // 5, cumulative=5
+    ASSERT_EQ(buffer_total_bytes(b), 5);
+    buffer_push(b, make_entry("a very long line here", 2));    // 21, cumulative=26
+    ASSERT_EQ(buffer_total_bytes(b), 26);
+    buffer_push(b, make_entry("mid", 3));                      // 3, cumulative=29
+    ASSERT_EQ(buffer_total_bytes(b), 29);
+
+    buffer_push(b, make_entry("x", 4));                        // evicts "short", adds "x"(1), cumulative=30
+    ASSERT_EQ(buffer_total_bytes(b), 30);
+
+    buffer_push(b, make_entry("yy", 5));                       // evicts "a very long line here", adds "yy"(2), cumulative=32
+    ASSERT_EQ(buffer_total_bytes(b), 32);
+
+    buffer_free(b);
+}
+
 int main(void) {
     printf("Running ring buffer tests...\n\n");
     
@@ -216,6 +234,7 @@ int main(void) {
     RUN_TEST(total_bytes_tracking);
     RUN_TEST(capacity_one);
     RUN_TEST(null_safety);
+    RUN_TEST(total_bytes_cumulative_after_eviction);
     
     printf("\n");
     printf("==============================\n");

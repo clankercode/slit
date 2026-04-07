@@ -431,7 +431,16 @@ int main(int argc, char *argv[]) {
     while ((opt = getopt_long(argc, argv, "n:o:alwtvdh", long_options, &option_index)) != -1) {
         switch (opt) {
             case 'n':
-                cfg.lines = atoi(optarg);
+                {
+                    char *endp;
+                    long val = strtol(optarg, &endp, 10);
+                    if (*endp != '\0' || val <= 0) {
+                        fprintf(stderr, "Error: --lines must be a positive integer\n");
+                        free_config(&cfg);
+                        return 1;
+                    }
+                    cfg.lines = (int)val;
+                }
                 if (cfg.lines < 0) {
                     fprintf(stderr, "Error: --lines must be >= 0\n");
                     free_config(&cfg);
@@ -467,12 +476,14 @@ int main(int argc, char *argv[]) {
                 return 0;
             case 0:
                 if (strcmp(long_options[option_index].name, "max-lines") == 0) {
-                    cfg.max_lines = atoi(optarg);
-                    if (cfg.max_lines <= 0) {
-                        fprintf(stderr, "Error: --max-lines must be > 0\n");
+                    char *endp;
+                    long val = strtol(optarg, &endp, 10);
+                    if (*endp != '\0' || val <= 0) {
+                        fprintf(stderr, "Error: --max-lines must be a positive integer\n");
                         free_config(&cfg);
                         return 1;
                     }
+                    cfg.max_lines = (int)val;
                 } else if (strcmp(long_options[option_index].name, "tee-format") == 0) {
                     int fmt = parse_tee_format(optarg);
                     if (fmt < 0) {
@@ -549,8 +560,8 @@ int main(int argc, char *argv[]) {
         cfg.layout = layout_value;
     }
 
-    int force_render = getenv("SLIT_FORCE_RENDER") != NULL &&
-                       strcmp(getenv("SLIT_FORCE_RENDER"), "1") == 0;
+    const char *force_env = getenv("SLIT_FORCE_RENDER");
+    int force_render = force_env != NULL && strcmp(force_env, "1") == 0;
     int can_render = is_stderr_tty() || force_render;
 
     if (!can_render) {
@@ -687,7 +698,35 @@ int main(int argc, char *argv[]) {
                     buffer_push(buf, entry);
                 }
 
-                if (tw) tee_write_line(tw, line);
+                if (tw) {
+                    if (cfg.tee_format == TEE_DISPLAY) {
+                        char dtmp[4096], stripped[4096];
+                        dtmp[0] = '\0';
+                        int pos = 0;
+                        if (cfg.timestamp) {
+                            struct tm *tm_info = localtime(&(entry->arrival));
+                            pos += snprintf(dtmp + pos, sizeof(dtmp) - pos,
+                                            "%02d:%02d:%02d ",
+                                            tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec);
+                        }
+                        if (cfg.line_numbers) {
+                            size_t tl = buffer_total_lines(buf);
+                            int gw = 1;
+                            while (tl >= 10) { tl /= 10; gw++; }
+                            pos += snprintf(dtmp + pos, sizeof(dtmp) - pos,
+                                            "%*zu ", gw, entry->line_num);
+                        }
+                        if (cfg.color == COLOR_NEVER || (cfg.color == COLOR_AUTO && !is_stderr_tty())) {
+                            snprintf(dtmp + pos, sizeof(dtmp) - pos, "%s", line);
+                        } else {
+                            strip_ansi(line, stripped, sizeof(stripped));
+                            snprintf(dtmp + pos, sizeof(dtmp) - pos, "%s", stripped);
+                        }
+                        tee_write_line(tw, dtmp);
+                    } else {
+                        tee_write_line(tw, line);
+                    }
+                }
 
                 dirty = 1;
             } while (can_drain);

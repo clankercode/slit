@@ -109,6 +109,24 @@ func TestRingTotalBytes(t *testing.T) {
 	}
 }
 
+func TestRingTotalBytesCumulativeAfterEviction(t *testing.T) {
+	rb := NewRingBuffer(3)
+	rb.Push("short")            // 5, cumulative=5
+	rb.Push("a very long line") // 16, cumulative=21
+	rb.Push("mid")              // 3, cumulative=24
+	if rb.TotalBytes() != 24 {
+		t.Fatalf("before eviction: expected 24, got %d", rb.TotalBytes())
+	}
+	rb.Push("x") // evicts "short", adds "x"(1), cumulative=25
+	if rb.TotalBytes() != 25 {
+		t.Errorf("after first eviction: expected 25, got %d", rb.TotalBytes())
+	}
+	rb.Push("yy") // evicts "a very long line", adds "yy"(2), cumulative=27
+	if rb.TotalBytes() != 27 {
+		t.Errorf("after second eviction: expected 27, got %d", rb.TotalBytes())
+	}
+}
+
 func TestRingEmpty(t *testing.T) {
 	rb := NewRingBuffer(5)
 	if !rb.IsEmpty() {

@@ -37,7 +37,7 @@ main() {
     curl -sL -o "$tmp/SHA256SUMS" "$checksums_url"
 
     printf '  verifying checksum...\n'
-    expected="$(grep "$artifact" "$tmp/SHA256SUMS" | cut -d' ' -f1)"
+    expected="$(grep "  ${artifact}$" "$tmp/SHA256SUMS" | cut -d' ' -f1)"
     if [ -z "$expected" ]; then
         err "checksum not found for $artifact"
     fi

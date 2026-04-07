@@ -163,7 +163,7 @@ async fn main() -> anyhow::Result<()> {
     let config = Config::resolve(&cli)?;
 
     if !app::is_stderr_tty() {
-        app::passthrough().await?;
+        app::passthrough(&config).await?;
         return Ok(());
     }
 

@@ -742,16 +742,16 @@
 <!-- ──────────────────── HERO ─────────────────── -->
 <section id="hero">
 
-  <div id="stream-bg">
+  <div id="stream-bg" aria-hidden="true">
     <div id="stream-text"></div>
   </div>
 
-  <div class="panel" id="panel-top"></div>
-  <div class="panel" id="panel-bottom"></div>
-  <div class="panel" id="panel-left"></div>
-  <div class="panel" id="panel-right"></div>
+  <div class="panel" id="panel-top" aria-hidden="true"></div>
+  <div class="panel" id="panel-bottom" aria-hidden="true"></div>
+  <div class="panel" id="panel-left" aria-hidden="true"></div>
+  <div class="panel" id="panel-right" aria-hidden="true"></div>
 
-  <div id="clip-chrome">
+  <div id="clip-chrome" aria-hidden="true">
     <div id="chrome-titlebar">
       <span class="chrome-corner">┌─</span>
       <span id="chrome-title-text">$ tail -f pipeline.log | slit --box</span>
@@ -776,7 +776,7 @@
   <div id="hero-content">
     <h1 id="hero-title">
       SLIT
-      <div id="slit-cut"></div>
+      <span id="slit-cut"></span>
     </h1>
     <p id="hero-tagline">stream viewer for the terminal</p>
     <div id="hero-install">
@@ -786,7 +786,7 @@
         <button class="install-tab" onclick="switchInstall('go', this)">Go</button>
       </div>
       <div id="install-cmd-wrap">
-        <code id="install-cmd">curl -sL https://github.com/clankercode/slit/releases/latest/download/slit-c-linux-x86_64.tar.gz | tar xz && sudo mv slit /usr/local/bin/</code>
+        <code id="install-cmd">curl -sL https://clankercode.github.io/slit/install.sh | sh</code>
         <button id="copy-btn" onclick="copyInstall()">copy</button>
       </div>
     </div>
@@ -1012,8 +1012,8 @@
 'use strict';
 
 var INSTALL_CMDS = {
-  c: 'curl -sL clankercode.github.io/slit/install.sh | sh',
-  rust: 'cargo install slitty',
+  c: 'curl -sL https://clankercode.github.io/slit/install.sh | sh',
+  rust: 'git clone https://github.com/clankercode/slit && cd slit/rust && cargo install --path .',
   go: 'go install github.com/clankercode/slit/go@latest'
 };
 
@@ -1036,7 +1036,7 @@ var CHROME_LINES = [
 
 var LINES = [
   'cargo build --release',
-  '   Compiling slit {{VERSION}} (/home/user/slit/rust)',
+  '   Compiling slit v0.2.3 (/home/user/slit/rust)',
   '   Compiling tokio v1.35.1',
   '   Compiling ratatui v0.26.1',
   '   Compiling crossterm v0.27.0',

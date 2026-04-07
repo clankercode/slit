@@ -37,7 +37,6 @@ void buffer_push(struct ring_buffer *b, struct line_entry *entry) {
         struct line_entry *old = b->entries[b->head];
         if (old) {
             if (old->text) {
-                b->total_bytes -= strlen(old->text);
                 free(old->text);
             }
             free(old);

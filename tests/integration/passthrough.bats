@@ -21,3 +21,19 @@ line3" ]
     [ $? -eq 0 ]
     [ -z "$output" ]
 }
+
+@test "Passthrough mode writes to -o file" {
+    tmpfile="$(mktemp)"
+    printf "line1\nline2\nline3\n" | "$SLIT_BIN" -o "$tmpfile"
+    [ $? -eq 0 ]
+    diff <(cat "$tmpfile") <(printf "line1\nline2\nline3\n")
+    rm -f "$tmpfile"
+}
+
+@test "Passthrough mode -o --append appends" {
+    tmpfile="$(mktemp)"
+    printf "first\n" | "$SLIT_BIN" -o "$tmpfile"
+    printf "second\n" | "$SLIT_BIN" -o "$tmpfile" -a
+    diff <(cat "$tmpfile") <(printf "first\nsecond\n")
+    rm -f "$tmpfile"
+}

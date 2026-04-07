@@ -43,7 +43,7 @@
           src = self;
           modRoot = "go";
 
-          vendorHash = ""; # set to actual hash after first build attempt
+          vendorHash = pkgs.lib.fakeHash; # run `nix build .#slit-go` once, replace with the "got: sha256-..." from the error
         };
       in {
         packages = {

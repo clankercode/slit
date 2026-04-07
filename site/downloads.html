@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Download slit — pre-built binaries, checksums, and build-from-source instructions for the streaming terminal viewer.">
   <title>slit — downloads</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,700;0,800&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -20,7 +21,7 @@
       --dim:         #666;
       --faint:      #333;
       --accent:     #00e5ff;
-      --accent-lo:  rgba(0,229,255,0.07);
+      --accent-lo:  rgba(0,229,255,0.08);
       --font:        'JetBrains Mono', monospace;
     }
 
@@ -32,6 +33,7 @@
       font-family: var(--font);
       font-size: 14px;
       line-height: 1.6;
+      overflow-x: hidden;
     }
 
     a { color: inherit; text-decoration: none; }
@@ -336,15 +338,18 @@
     .footer-links { display: flex; gap: 1.5rem; }
     footer a:hover { color: var(--accent); }
     @media (max-width: 720px) {
+      body { overflow-x: hidden; }
       .source-grid { grid-template-columns: 1fr; }
       .source-card { border-right: none; border-bottom: 1px solid var(--border); }
       .source-card:last-child { border-bottom: none; }
+      .dl-table-wrap { overflow-x: auto; }
     }
   </style>
 </head>
 <body>
 
-<nav>
+<nav aria-label="Main">
+
   <a href="index.html" class="nav-logo">slit</a>
   <ul class="nav-links">
     <li><a href="index.html#features">features</a></li>
@@ -485,18 +490,18 @@
           <td><span class="lang-name rust">Rust</span></td>
           <td>
             <code style="font-size:0.78rem;color:#ff8c5a;">
-              cargo install --git https://github.com/clankercode/slit rust
+              git clone https://github.com/clankercode/slit && cd slit/rust && cargo install --path .
             </code>
           </td>
           <td>
-            <button class="dl-link" onclick="copyText('cargo install --git https://github.com/clankercode/slit rust', this)">copy</button>
+            <button class="dl-link" onclick="copyText('git clone https://github.com/clankercode/slit && cd slit/rust && cargo install --path .', this)">copy</button>
           </td>
         </tr>
         <tr>
           <td><span class="lang-name c">C</span></td>
           <td>
             <code style="font-size:0.78rem;color:#aac8ff;">
-              git clone &amp;&amp; cd c &amp;&amp; make &amp;&amp; sudo cp slit /usr/local/bin/
+              git clone https://github.com/clankercode/slit &amp;&amp; cd slit/c &amp;&amp; make &amp;&amp; sudo cp slit /usr/local/bin/
             </code>
           </td>
           <td>
@@ -548,7 +553,17 @@ slit {{VERSION}} (go)</pre>
 
   <div style="margin-top:3.5rem;padding:2rem;border:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
     <div>
-      <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.18em;color:var(--dim);margin-bottom:0.4rem;">quickest start</div>
+      <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.18em;color:var(--dim);margin-bottom:0.4rem;">homebrew (linux)</div>
+      <code style="color:var(--accent);font-size:0.82rem;">brew install clankercode/slit/slit</code>
+    </div>
+    <button class="dl-link primary" onclick="copyText('brew install clankercode/slit/slit', this)">
+      copy command
+    </button>
+  </div>
+
+  <div style="margin-top:1rem;padding:2rem;border:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+    <div>
+      <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.18em;color:var(--dim);margin-bottom:0.4rem;">go install</div>
       <code style="color:var(--accent);font-size:0.82rem;">go install github.com/clankercode/slit/go@latest</code>
     </div>
     <button class="dl-link primary" onclick="copyText('go install github.com/clankercode/slit/go@latest', this)">

@@ -114,7 +114,8 @@ Usage: slit [flags]
 
 Display
   -n, --lines int          Pane height (default: terminal height - 1)
-      --layout string      Layout: minimal|box|rounded|compact|none|quote (default: minimal)
+       --layout string      Layout: minimal|box|rounded|compact|none|quote (default: minimal)
+      Shorthands: --box, --rounded, --compact
       --wrap               Wrap long lines instead of truncating
   -l, --line-numbers       Show line numbers
   -t, --timestamp          Prepend timestamp to each line
@@ -167,6 +168,16 @@ cd rust && cargo build --release
 ```
 
 ## Installing
+
+```sh
+# Homebrew (Linux)
+brew install clankercode/slit/slit
+
+# One-liner installer (C binary, Linux/macOS)
+curl -sL https://clankercode.github.io/slit/install.sh | sh
+```
+
+### From source
 
 ```sh
 # C

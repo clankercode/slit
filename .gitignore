@@ -3,6 +3,9 @@ rust/target/
 c/slit
 target/
 *.o
+c/test_buffer
+c/test_render
+c/test_terminal
 __pycache__/
 benchmark-results.txt
 tmp.*.md

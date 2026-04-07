@@ -63,6 +63,7 @@ char *format_status_line(enum spinner_type spinner, int frame, int eof,
     if (width <= 0) {
         size_t total = strlen(lhs) + (keys_vis > 0 ? 2 + strlen(keys) : 0);
         char *r = malloc(total + 1);
+        if (!r) return strdup(lhs);
         if (keys_vis > 0) snprintf(r, total + 1, "%s  %s", lhs, keys);
         else { memcpy(r, lhs, strlen(lhs) + 1); }
         return r;

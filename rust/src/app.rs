@@ -469,7 +469,30 @@ fn get_file_size() -> u64 {
     0
 }
 
-pub async fn passthrough() -> anyhow::Result<()> {
-    tokio::io::copy(&mut tokio::io::stdin(), &mut tokio::io::stdout()).await?;
+pub async fn passthrough(config: &crate::config::Config) -> anyhow::Result<()> {
+    use tokio::io::{AsyncBufReadExt, BufReader};
+
+    let mut tw = config.output.as_ref().and_then(|p| {
+        crate::tee::TeeWriter::new(p, config.append)
+    });
+
+    let stdin = tokio::io::stdin();
+    let reader = BufReader::new(stdin);
+    let mut lines = reader.lines();
+
+    use tokio::io::{AsyncWriteExt, stdout};
+    let mut out = stdout();
+
+    while let Some(line) = lines.next_line().await? {
+        out.write_all(line.as_bytes()).await?;
+        out.write_all(b"\n").await?;
+        if let Some(ref mut tw) = tw {
+            tw.write_line(&line);
+        }
+    }
+    out.flush().await?;
+    if let Some(mut tw) = tw {
+        tw.close();
+    }
     Ok(())
 }
