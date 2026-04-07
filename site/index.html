@@ -136,7 +136,9 @@
     #clip-chrome {
       position: absolute;
       z-index: 4;
-      border: 1px solid var(--accent);
+      border: none;
+      border-left: 1px solid rgba(0,229,255,0.4);
+      border-right: 1px solid rgba(0,229,255,0.4);
       opacity: 0;
       pointer-events: none;
       overflow: hidden;
@@ -146,58 +148,43 @@
 
     #chrome-titlebar {
       height: 2.2em;
-      background: var(--accent-lo);
-      border-bottom: 1px solid rgba(0,229,255,0.2);
+      background: rgba(0,0,0,0.95);
       display: flex;
       align-items: center;
-      padding: 0 0.8em;
-      gap: 0.65em;
+      padding: 0;
+      flex-shrink: 0;
+      color: rgba(0,229,255,0.5);
+      font-size: 0.75rem;
+      overflow: hidden;
+    }
+
+    .chrome-corner {
+      color: rgba(0,229,255,0.5);
+      padding: 0 0.15em;
       flex-shrink: 0;
     }
 
-    #chrome-dots {
-      display: flex;
-      gap: 0.45em;
+    .chrome-fill {
+      flex: 1;
+      overflow: hidden;
+      color: rgba(0,229,255,0.25);
     }
-
-    .chrome-dot {
-      width: 0.7em;
-      height: 0.7em;
-      border-radius: 50%;
-      display: inline-block;
-    }
-    .chrome-dot.red    { background: #ff5f57; }
-    .chrome-dot.yellow { background: #febc2e; }
-    .chrome-dot.green  { background: #28c840; }
 
     #chrome-title-text {
-      font-size: 0.68rem;
-      color: rgba(0,229,255,0.5);
-      flex: 1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    #chrome-cursor-char {
-      color: var(--accent);
       font-size: 0.75rem;
-      animation: cursor-blink 1s step-end infinite;
-    }
-
-    @keyframes cursor-blink {
-      0%, 100% { opacity: 1; }
-      50%      { opacity: 0; }
+      color: rgba(0,229,255,0.7);
+      white-space: nowrap;
+      padding: 0 0.5em;
     }
 
     #chrome-body {
       flex: 1;
       overflow: hidden;
       padding: 0.4em 0.8em;
-      font-size: 0.62rem;
+      font-size: 0.8rem;
       line-height: 1.55;
-      color: rgba(0,229,255,0.25);
-      background: rgba(0,0,0,0.3);
+      color: rgba(0,229,255,0.5);
+      background: rgba(0,0,0,0.95);
     }
 
     #chrome-body div {
@@ -206,13 +193,17 @@
       text-overflow: ellipsis;
     }
 
+    #chrome-body div::before {
+      content: '│ ';
+      color: rgba(0,229,255,0.3);
+    }
+
     #chrome-status {
       height: 1.7em;
-      background: var(--accent-lo);
-      border-top: 1px solid rgba(0,229,255,0.25);
+      background: rgba(0,0,0,0.95);
       display: flex;
       align-items: center;
-      padding: 0 0.7em;
+      padding: 0;
       gap: 0.8em;
       font-size: 0.72rem;
       color: var(--accent);
@@ -762,16 +753,14 @@
 
   <div id="clip-chrome">
     <div id="chrome-titlebar">
-      <div id="chrome-dots">
-        <span class="chrome-dot red"></span>
-        <span class="chrome-dot yellow"></span>
-        <span class="chrome-dot green"></span>
-      </div>
-      <span id="chrome-title-text">pipeline.log — slit</span>
-      <span id="chrome-cursor-char">▊</span>
+      <span class="chrome-corner">┌─</span>
+      <span id="chrome-title-text">$ tail -f pipeline.log | slit --box</span>
+      <span class="chrome-fill">────────────────────────────────────────────────────────────────────────</span>
+      <span class="chrome-corner">┐</span>
     </div>
     <div id="chrome-body"></div>
     <div id="chrome-status">
+      <span class="chrome-corner">└─</span>
       <span id="spin-char">⠋</span>
       <span id="line-ct">0 lines</span>
       <span class="chrome-sep">│</span>
@@ -779,6 +768,8 @@
       <span class="chrome-sep">│</span>
       <span id="chrome-file">pipeline.log</span>
       <span id="chrome-keys">q quit  ^C exit  / search  G end</span>
+      <span class="chrome-fill">──────────────────────────────────────────</span>
+      <span class="chrome-corner">┘</span>
     </div>
   </div>
 
@@ -996,7 +987,7 @@
 
 <!-- ──────────────────── DOWNLOAD CTA ─────────── -->
 <div id="download-cta">
-  <div class="eyebrow" style="justify-content:center;display:flex;margin-bottom:1rem;">v0.1.0</div>
+  <div class="eyebrow" style="justify-content:center;display:flex;margin-bottom:1rem;">{{VERSION}}</div>
   <h2>Get slit.</h2>
   <p class="lead">Linux x86_64. Three implementations. Zero runtime deps for C.</p>
   <div class="dl-buttons">
@@ -1008,7 +999,7 @@
 
 <!-- ──────────────────── FOOTER ───────────────── -->
 <footer>
-  <span>slit v0.1.0 — MIT license</span>
+  <span>slit {{VERSION}} — CC0-1.0</span>
   <div class="footer-links">
     <a href="https://github.com/clankercode/slit" target="_blank" rel="noopener">github</a>
     <a href="https://github.com/clankercode/slit/releases" target="_blank" rel="noopener">releases</a>
@@ -1045,7 +1036,7 @@ var CHROME_LINES = [
 
 var LINES = [
   'cargo build --release',
-  '   Compiling slit v0.1.0 (/home/user/slit/rust)',
+  '   Compiling slit {{VERSION}} (/home/user/slit/rust)',
   '   Compiling tokio v1.35.1',
   '   Compiling ratatui v0.26.1',
   '   Compiling crossterm v0.27.0',

@@ -19,6 +19,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Inject version
+        run: |
+          VERSION=$(curl -sL "https://api.github.com/repos/clankercode/slit/releases/latest" | grep '"tag_name"' | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "Latest version: ${VERSION:-unknown}"
+          find site -name '*.html' -exec sed -i "s/{{VERSION}}/${VERSION:-dev}/g" {} +
       - name: Prepare site
         run: cp scripts/install.sh site/install.sh
       - name: Upload artifact

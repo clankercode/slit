@@ -399,8 +399,8 @@
 
   <div class="version-row">
     <span class="version-label">version</span>
-    <span class="version-tag">v0.1.0</span>
-    <a class="changelog-link" href="https://github.com/clankercode/slit/releases/tag/v0.1.0" target="_blank" rel="noopener">changelog ↗</a>
+    <span class="version-tag">{{VERSION}}</span>
+    <a class="changelog-link" href="https://github.com/clankercode/slit/releases/tag/{{VERSION}}" target="_blank" rel="noopener">changelog ↗</a>
     <span class="version-date">latest release</span>
   </div>
 
@@ -566,7 +566,7 @@
 <span class="prompt">$ </span><span class="cmd">cd</span> slit/c
 <span class="prompt">$ </span><span class="cmd">make</span>
 <span class="prompt">$ </span><span class="cmd">./slit</span> <span class="flag">--version</span>
-slit 0.1.0 (c)</pre>
+slit {{VERSION}} (c)</pre>
       </div>
       <div class="source-card">
         <div class="source-lang rust">Rust</div>
@@ -574,7 +574,7 @@ slit 0.1.0 (c)</pre>
 <span class="prompt">$ </span><span class="cmd">cd</span> slit/rust
 <span class="prompt">$ </span><span class="cmd">cargo build</span> <span class="flag">--release</span>
 <span class="prompt">$ </span><span class="cmd">./target/release/slit</span> <span class="flag">--version</span>
-slit 0.1.0 (rust)</pre>
+slit {{VERSION}} (rust)</pre>
       </div>
       <div class="source-card">
         <div class="source-lang go">Go</div>
@@ -582,7 +582,7 @@ slit 0.1.0 (rust)</pre>
 <span class="prompt">$ </span><span class="cmd">cd</span> slit/go
 <span class="prompt">$ </span><span class="cmd">go build</span> <span class="flag">-o slit</span> <span class="flag">./...</span>
 <span class="prompt">$ </span><span class="cmd">./slit</span> <span class="flag">--version</span>
-slit 0.1.0 (go)</pre>
+slit {{VERSION}} (go)</pre>
       </div>
     </div>
   </div>
@@ -609,7 +609,7 @@ slit 0.1.0 (go)</pre>
 </div>
 
 <footer>
-  <span>slit v0.1.0 — MIT license</span>
+  <span>slit {{VERSION}} — CC0-1.0</span>
   <div class="footer-links">
     <a href="https://github.com/clankercode/slit" target="_blank" rel="noopener">github</a>
     <a href="https://github.com/clankercode/slit/releases" target="_blank" rel="noopener">all releases</a>
