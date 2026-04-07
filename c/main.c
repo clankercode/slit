@@ -243,7 +243,14 @@ static void passthrough_mode(struct slit_config *cfg) {
     char *line = NULL;
     size_t len = 0;
     while (getline(&line, &len, stdin) != -1) {
-        fputs(line, stdout);
+        if (fputs(line, stdout) == EOF) {
+            free(line);
+            if (tw) tee_close(tw);
+            debug_log("passthrough: stdout write error");
+            debug_close();
+            return;
+        }
+        fflush(stdout);
         if (tw) {
             size_t slen = strlen(line);
             while (slen > 0 && (line[slen-1] == '\n' || line[slen-1] == '\r'))

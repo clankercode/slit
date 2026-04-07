@@ -20,7 +20,7 @@ struct tee_writer *tee_open(const char *path, int append, enum tee_format format
 
 void tee_write_line(struct tee_writer *tw, const char *line) {
     if (!tw || !tw->fp || !line) return;
-    fputs(line, tw->fp);
+    if (fputs(line, tw->fp) == EOF) return;
     fputc('\n', tw->fp);
     fflush(tw->fp);
 }
