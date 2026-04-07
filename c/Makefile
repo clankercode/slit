@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -Werror -std=c11 -pedantic -D_POSIX_C_SOURCE=200809L
 
 TARGET = slit
-SRCS = main.c buffer.c terminal.c render.c layout.c spinner.c status.c tee.c debug.c completion.c
+SRCS = main.c buffer.c terminal.c render.c layout.c spinner.c status.c tee.c debug.c completion.c configfile.c
 OBJS = $(SRCS:.c=.o)
 
 TEST_TARGETS = test_buffer test_terminal test_render
@@ -18,7 +18,7 @@ build: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^
 
-%.o: %.c slit.h terminal.h buffer.h render.h layout.h spinner.h status.h tee.h debug.h completion.h
+%.o: %.c slit.h terminal.h buffer.h render.h layout.h spinner.h status.h tee.h debug.h completion.h configfile.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:

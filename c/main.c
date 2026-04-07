@@ -17,6 +17,7 @@
 #include "tee.h"
 #include "debug.h"
 #include "completion.h"
+#include "configfile.h"
 
 #define DEFAULT_TRUNCATION_CHAR "\xe2\x80\xa6"
 
@@ -402,6 +403,7 @@ int main(int argc, char *argv[]) {
     }
 
     struct slit_config cfg = default_config();
+    load_config_file(&cfg);
     int layout_set = 0;
     int layout_value = LAYOUT_MINIMAL;
 
