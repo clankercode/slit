@@ -20,6 +20,7 @@ use ratatui::TerminalOptions;
 use ratatui::Viewport;
 use std::io;
 use std::time::Duration;
+use tokio::signal::unix::{signal, SignalKind};
 
 pub struct App {
     config: Config,
@@ -154,6 +155,8 @@ impl App {
         let mut tick = tokio::time::interval(Duration::from_millis(10));
         tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
+        let mut sigtstp_stream = signal(SignalKind::from_raw(libc::SIGTSTP)).ok();
+
         loop {
             tokio::select! {
                 line = rx.recv() => {
@@ -217,6 +220,21 @@ impl App {
                         tokio::time::sleep(Duration::from_millis(200)).await;
                         return Ok(());
                     }
+                }
+                _ = async {
+                    if let Some(ref mut s) = sigtstp_stream {
+                        s.recv().await
+                    } else {
+                        std::future::pending().await
+                    }
+                } => {
+                    drop(terminal);
+                    let _ = disable_raw_mode();
+                    unsafe { libc::raise(libc::SIGTSTP); }
+                    enable_raw_mode()?;
+                    terminal = create_terminal(self.viewport_height())?;
+                    self.needs_reinit = false;
+                    self.dirty = true;
                 }
             }
         }

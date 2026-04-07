@@ -154,6 +154,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.debugLogger != nil {
 			m.debugLogger.Log("eof: totalLines=%d, totalBytes=%d", m.buf.TotalCount(), m.buf.TotalBytes())
+			m.debugLogger.Close()
 		}
 		return m, tea.Tick(200*time.Millisecond, func(t time.Time) tea.Msg {
 			return tea.Quit()
@@ -164,6 +165,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "q", "Q", "ctrl+c":
 			if m.teeWriter != nil {
 				m.teeWriter.Close()
+			}
+			if m.debugLogger != nil {
+				m.debugLogger.Close()
 			}
 			return m, tea.Quit
 		}

@@ -75,6 +75,12 @@ jobs:
       - name: Install C toolchain
         run: sudo apt-get update && sudo apt-get install -y build-essential
 
+      - name: Install bats-core
+        run: |
+          git clone https://github.com/bats-core/bats-core.git /tmp/bats-core
+          sudo /tmp/bats-core/install.sh /usr/local
+          bats --version
+
       - name: Build C binary
         run: make build
         working-directory: c
@@ -86,6 +92,9 @@ jobs:
       - name: Verify C man page generation
         run: ./slit --generate-man | grep '^.TH'
         working-directory: c
+
+      - name: Run C integration tests
+        run: SLIT_BIN=c/slit bats tests/integration
 
   rust:
     runs-on: ubuntu-latest
@@ -116,3 +125,12 @@ jobs:
       - name: Verify Rust man page generation
         run: ./target/release/slit --generate-man | grep '^.TH'
         working-directory: rust
+
+      - name: Install bats-core
+        run: |
+          git clone https://github.com/bats-core/bats-core.git /tmp/bats-core
+          sudo /tmp/bats-core/install.sh /usr/local
+          bats --version
+
+      - name: Run Rust integration tests
+        run: SLIT_BIN=rust/target/release/slit bats tests/integration

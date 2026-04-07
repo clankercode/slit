@@ -78,6 +78,9 @@ var rootCmd = &cobra.Command{
 					tw.WriteLine(line)
 				}
 			}
+			if err := scanner.Err(); err != nil {
+				fmt.Fprintf(os.Stderr, "slit: stdin read error: %v\n", err)
+			}
 			if tw != nil {
 				tw.Close()
 			}
@@ -94,6 +97,9 @@ var rootCmd = &cobra.Command{
 			for scanner.Scan() {
 				line := scanner.Text()
 				p.Send(lineMsg(line))
+			}
+			if err := scanner.Err(); err != nil {
+				fmt.Fprintf(os.Stderr, "slit: stdin read error: %v\n", err)
 			}
 			p.Send(eofMsg{})
 		}()
