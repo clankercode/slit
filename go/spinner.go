@@ -22,8 +22,20 @@ func GetSpinnerFrame(style string, frame int) string {
 	return frames[frame%len(frames)]
 }
 
+func formatBytesHuman(bytes int64) string {
+	if bytes < 1024 {
+		return fmt.Sprintf("%dB", bytes)
+	} else if bytes < 1024*1024 {
+		return fmt.Sprintf("%.1fKB", float64(bytes)/1024.0)
+	} else if bytes < 1024*1024*1024 {
+		return fmt.Sprintf("%.1fMB", float64(bytes)/(1024.0*1024.0))
+	}
+	return fmt.Sprintf("%.1fGB", float64(bytes)/(1024.0*1024.0*1024.0))
+}
+
 func FormatStatusLine(spinnerStyle string, frame int, eof bool, lineCount int, totalBytes int64, fileSize int64, width int) string {
 	spinner := GetSpinnerFrame(spinnerStyle, frame)
+	byteStr := formatBytesHuman(totalBytes)
 
 	progressPart := ""
 	if fileSize > 0 {
@@ -43,9 +55,9 @@ func FormatStatusLine(spinnerStyle string, frame int, eof bool, lineCount int, t
 
 	var line string
 	if eof {
-		line = fmt.Sprintf("Done. (%d lines)%s%s", lineCount, progressPart, keysPart)
+		line = fmt.Sprintf("Done. (%d lines, %s)%s%s", lineCount, byteStr, progressPart, keysPart)
 	} else {
-		line = fmt.Sprintf("%s Streaming... (%d lines)%s%s", spinner, lineCount, progressPart, keysPart)
+		line = fmt.Sprintf("%s Streaming... (%d lines, %s)%s%s", spinner, lineCount, byteStr, progressPart, keysPart)
 	}
 
 	if width <= 0 {

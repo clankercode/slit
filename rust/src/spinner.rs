@@ -17,6 +17,18 @@ pub fn get_spinner_frame(style: &str, frame: usize) -> &'static str {
     frames[frame % frames.len()]
 }
 
+pub fn format_bytes_human(bytes: u64) -> String {
+    if bytes < 1024 {
+        format!("{}B", bytes)
+    } else if bytes < 1024 * 1024 {
+        format!("{:.1}KB", bytes as f64 / 1024.0)
+    } else if bytes < 1024 * 1024 * 1024 {
+        format!("{:.1}MB", bytes as f64 / (1024.0 * 1024.0))
+    } else {
+        format!("{:.1}GB", bytes as f64 / (1024.0 * 1024.0 * 1024.0))
+    }
+}
+
 pub fn format_status_line(
     spinner_style: &str,
     frame: usize,
@@ -27,7 +39,7 @@ pub fn format_status_line(
     width: usize,
 ) -> String {
     let spinner = get_spinner_frame(spinner_style, frame);
-
+    let byte_str = format_bytes_human(total_bytes);
     let progress_part = if file_size > 0 {
         let bar_width: usize = 10;
         let filled =
@@ -46,11 +58,14 @@ pub fn format_status_line(
     };
 
     let line = if eof {
-        format!("Done. ({} lines){}{}", line_count, progress_part, keys_part)
+        format!(
+            "Done. ({} lines, {}){}{}",
+            line_count, byte_str, progress_part, keys_part
+        )
     } else {
         format!(
-            "{} Streaming... ({} lines){}{}",
-            spinner, line_count, progress_part, keys_part
+            "{} Streaming... ({} lines, {}){}{}",
+            spinner, line_count, byte_str, progress_part, keys_part
         )
     };
 
@@ -128,5 +143,14 @@ mod tests {
     fn test_format_status_progress() {
         let status = format_status_line("braille", 0, false, 10, 50, 100, 80);
         assert!(status.contains("[=====     ]"));
+    }
+
+    #[test]
+    fn test_format_bytes_human() {
+        assert_eq!(format_bytes_human(0), "0B");
+        assert_eq!(format_bytes_human(512), "512B");
+        assert_eq!(format_bytes_human(1024), "1.0KB");
+        assert_eq!(format_bytes_human(1048576), "1.0MB");
+        assert_eq!(format_bytes_human(1073741824), "1.0GB");
     }
 }
