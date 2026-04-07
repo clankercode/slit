@@ -9,3 +9,4 @@ c/test_terminal
 __pycache__/
 benchmark-results.txt
 tmp.*.md
+tests/cross-impl/results/
