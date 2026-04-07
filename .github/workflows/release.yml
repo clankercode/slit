@@ -25,7 +25,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install C toolchain
-        run: sudo apt-get update && sudo apt-get install -y build-essential musl-tools
+        run: sudo apt-get update && sudo apt-get install -y build-essential musl-tools upx
 
       - name: Build C implementation
         run: make build
@@ -45,6 +45,14 @@ jobs:
       - name: Build Rust implementation
         run: cargo build --release
         working-directory: rust
+
+      - name: Optimize binaries
+        run: |
+          strip -s c/slit
+          strip -s c/slit-static
+          upx --best c/slit-static
+          strip --strip-unneeded rust/target/release/slit
+          upx --best rust/target/release/slit
 
       - name: Prepare release assets
         run: |
