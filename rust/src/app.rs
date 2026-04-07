@@ -488,7 +488,17 @@ fn get_file_size() -> u64 {
 }
 
 pub async fn passthrough(config: &crate::config::Config) -> anyhow::Result<()> {
-    use tokio::io::{AsyncBufReadExt, BufReader};
+    use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+
+    // Determine n: 0=pipe-all, positive=head+tail
+    // If --lines/-n was not explicitly passed, default to 10 (head+tail mode).
+    // If it was passed as 0, pipe everything through.
+    // If it was passed as a positive number, use that for head+tail.
+    let n: usize = if !config.lines_from_cli {
+        10
+    } else {
+        config.lines
+    };
 
     let mut tw = config.output.as_ref().and_then(|p| {
         crate::tee::TeeWriter::new(p, config.append)
@@ -497,20 +507,65 @@ pub async fn passthrough(config: &crate::config::Config) -> anyhow::Result<()> {
     let stdin = tokio::io::stdin();
     let reader = BufReader::new(stdin);
     let mut lines = reader.lines();
+    let mut out = tokio::io::stdout();
 
-    use tokio::io::{AsyncWriteExt, stdout};
-    let mut out = stdout();
+    if n == 0 {
+        // -n 0: pipe everything through
+        while let Some(line) = lines.next_line().await? {
+            out.write_all(line.as_bytes()).await?;
+            out.write_all(b"\n").await?;
+            if let Some(ref mut tw) = tw { tw.write_line(&line); }
+        }
+        out.flush().await?;
+        if let Some(mut tw) = tw { tw.close(); }
+        return Ok(());
+    }
 
-    while let Some(line) = lines.next_line().await? {
-        out.write_all(line.as_bytes()).await?;
-        out.write_all(b"\n").await?;
-        if let Some(ref mut tw) = tw {
-            tw.write_line(&line);
+    // Phase 1: head — emit first n lines immediately
+    let mut total: usize = 0;
+    while total < n {
+        match lines.next_line().await? {
+            None => break,
+            Some(line) => {
+                out.write_all(line.as_bytes()).await?;
+                out.write_all(b"\n").await?;
+                out.flush().await?;
+                if let Some(ref mut tw) = tw { tw.write_line(&line); }
+                total += 1;
+            }
         }
     }
-    out.flush().await?;
-    if let Some(mut tw) = tw {
-        tw.close();
+
+    // Phase 2: circular tail buffer — keep last n lines from remainder
+    let mut tail_buf: Vec<String> = vec![String::new(); n];
+    let mut tail_head: usize = 0;
+    let mut tail_count: usize = 0;
+
+    while let Some(line) = lines.next_line().await? {
+        total += 1;
+        if let Some(ref mut tw) = tw { tw.write_line(&line); }
+        if tail_count < n {
+            tail_buf[(tail_head + tail_count) % n] = line;
+            tail_count += 1;
+        } else {
+            tail_buf[tail_head] = line;
+            tail_head = (tail_head + 1) % n;
+        }
     }
+
+    // Phase 3: separator + tail
+    let omitted = total.saturating_sub(n).saturating_sub(tail_count);
+    if omitted > 0 {
+        let sep = format!("... [{} lines omitted] ...\n", omitted);
+        out.write_all(sep.as_bytes()).await?;
+    }
+    for i in 0..tail_count {
+        let idx = (tail_head + i) % n;
+        out.write_all(tail_buf[idx].as_bytes()).await?;
+        out.write_all(b"\n").await?;
+    }
+
+    out.flush().await?;
+    if let Some(mut tw) = tw { tw.close(); }
     Ok(())
 }
