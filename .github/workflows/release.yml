@@ -136,4 +136,18 @@ jobs:
       - name: Rebuild site with new version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run pages.yml --ref master --repo "$GITHUB_REPOSITORY"
+        run: |
+          SHA256_C=$(grep -oP '^\K[a-f0-9]{64}(?=\s+slit-c-linux-x86_64\.tar\.gz$)' dist/SHA256SUMS || true)
+          SHA256_C_STATIC=$(grep -oP '^\K[a-f0-9]{64}(?=\s+slit-c-linux-x86_64-static\.tar\.gz$)' dist/SHA256SUMS || true)
+          SHA256_RUST=$(grep -oP '^\K[a-f0-9]{64}(?=\s+slit-rust-linux-x86_64\.tar\.gz$)' dist/SHA256SUMS || true)
+          SHA256_GO=$(grep -oP '^\K[a-f0-9]{64}(?=\s+slit-go-linux-x86_64\.tar\.gz$)' dist/SHA256SUMS || true)
+          echo "Passing to pages.yml: version=$GITHUB_REF_NAME"
+          echo "  C=${SHA256_C:-MISSING} C-static=${SHA256_C_STATIC:-MISSING} Rust=${SHA256_RUST:-MISSING} Go=${SHA256_GO:-MISSING}"
+          gh workflow run pages.yml \
+            --ref master \
+            --repo "$GITHUB_REPOSITORY" \
+            -f version="$GITHUB_REF_NAME" \
+            -f sha256_c="${SHA256_C}" \
+            -f sha256_c_static="${SHA256_C_STATIC}" \
+            -f sha256_rust="${SHA256_RUST}" \
+            -f sha256_go="${SHA256_GO}"

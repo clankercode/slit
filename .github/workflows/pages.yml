@@ -4,6 +4,27 @@ on:
   push:
     branches: [master]
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. v0.2.4)'
+        required: false
+        type: string
+      sha256_c:
+        description: 'SHA256 of slit-c-linux-x86_64.tar.gz'
+        required: false
+        type: string
+      sha256_c_static:
+        description: 'SHA256 of slit-c-linux-x86_64-static.tar.gz'
+        required: false
+        type: string
+      sha256_rust:
+        description: 'SHA256 of slit-rust-linux-x86_64.tar.gz'
+        required: false
+        type: string
+      sha256_go:
+        description: 'SHA256 of slit-go-linux-x86_64.tar.gz'
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -21,39 +42,56 @@ jobs:
       - uses: actions/checkout@v4
       - name: Inject version and checksums
         run: |
-          echo "--- Fetching latest release version ---"
-          API_RESPONSE=$(curl -sL "https://api.github.com/repos/${{ github.repository }}/releases/latest")
-          echo "API response (first 500 chars):"
-          echo "$API_RESPONSE" | head -c 500
-          echo ""
-          VERSION=$(echo "$API_RESPONSE" | grep '"tag_name"' | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
-          echo "Resolved version: ${VERSION:-unknown}"
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+            echo "Using explicit version from release: ${VERSION}"
+          else
+            echo "--- Fetching latest release version from API ---"
+            API_RESPONSE=$(curl -sL "https://api.github.com/repos/${{ github.repository }}/releases/latest")
+            echo "API response (first 500 chars):"
+            echo "$API_RESPONSE" | head -c 500
+            echo ""
+            VERSION=$(echo "$API_RESPONSE" | grep '"tag_name"' | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+            echo "Resolved version from API: ${VERSION:-unknown}"
+          fi
           find site -name '*.html' -exec sed -i "s/{{VERSION}}/${VERSION:-dev}/g" {} +
 
-          echo "--- Fetching SHA256SUMS ---"
-          SHA256SUMS_FILE=$(mktemp)
-          if curl -sLf "https://github.com/${{ github.repository }}/releases/latest/download/SHA256SUMS" -o "$SHA256SUMS_FILE"; then
-            echo "SHA256SUMS downloaded successfully:"
-            cat "$SHA256SUMS_FILE"
-            SHA256_C=$(grep -oP '^\K[a-f0-9]{64}(?=\s+slit-c-linux-x86_64\.tar\.gz$)' "$SHA256SUMS_FILE" || true)
-            SHA256_C_STATIC=$(grep -oP '^\K[a-f0-9]{64}(?=\s+slit-c-linux-x86_64-static\.tar\.gz$)' "$SHA256SUMS_FILE" || true)
-            SHA256_RUST=$(grep -oP '^\K[a-f0-9]{64}(?=\s+slit-rust-linux-x86_64\.tar\.gz$)' "$SHA256SUMS_FILE" || true)
-            SHA256_GO=$(grep -oP '^\K[a-f0-9]{64}(?=\s+slit-go-linux-x86_64\.tar\.gz$)' "$SHA256SUMS_FILE" || true)
-            echo "C: ${SHA256_C:-MISSING}"
-            echo "C-static: ${SHA256_C_STATIC:-MISSING}"
-            echo "Rust: ${SHA256_RUST:-MISSING}"
-            echo "Go: ${SHA256_GO:-MISSING}"
-            find site -name '*.html' -exec sed -i "s/{{SHA256_C}}/${SHA256_C:-see release page}/g" {} +
-            find site -name '*.html' -exec sed -i "s/{{SHA256_C_STATIC}}/${SHA256_C_STATIC:-see release page}/g" {} +
-            find site -name '*.html' -exec sed -i "s/{{SHA256_RUST}}/${SHA256_RUST:-see release page}/g" {} +
-            find site -name '*.html' -exec sed -i "s/{{SHA256_GO}}/${SHA256_GO:-see release page}/g" {} +
+          if [ -n "${{ inputs.sha256_c }}" ]; then
+            echo "Using explicit checksums from release"
+            SHA256_C="${{ inputs.sha256_c }}"
+            SHA256_C_STATIC="${{ inputs.sha256_c_static }}"
+            SHA256_RUST="${{ inputs.sha256_rust }}"
+            SHA256_GO="${{ inputs.sha256_go }}"
+            find site -name '*.html' -exec sed -i "s/{{SHA256_C}}/${SHA256_C}/g" {} +
+            find site -name '*.html' -exec sed -i "s/{{SHA256_C_STATIC}}/${SHA256_C_STATIC}/g" {} +
+            find site -name '*.html' -exec sed -i "s/{{SHA256_RUST}}/${SHA256_RUST}/g" {} +
+            find site -name '*.html' -exec sed -i "s/{{SHA256_GO}}/${SHA256_GO}/g" {} +
           else
-            find site -name '*.html' -exec sed -i 's/{{SHA256_C}}/see release page/g' {} +
-            find site -name '*.html' -exec sed -i 's/{{SHA256_C_STATIC}}/see release page/g' {} +
-            find site -name '*.html' -exec sed -i 's/{{SHA256_RUST}}/see release page/g' {} +
-            find site -name '*.html' -exec sed -i 's/{{SHA256_GO}}/see release page/g' {} +
+            echo "--- Fetching SHA256SUMS from release ---"
+            SHA256SUMS_FILE=$(mktemp)
+            if curl -sLf "https://github.com/${{ github.repository }}/releases/latest/download/SHA256SUMS" -o "$SHA256SUMS_FILE"; then
+              echo "SHA256SUMS downloaded successfully:"
+              cat "$SHA256SUMS_FILE"
+              SHA256_C=$(grep -oP '^\K[a-f0-9]{64}(?=\s+slit-c-linux-x86_64\.tar\.gz$)' "$SHA256SUMS_FILE" || true)
+              SHA256_C_STATIC=$(grep -oP '^\K[a-f0-9]{64}(?=\s+slit-c-linux-x86_64-static\.tar\.gz$)' "$SHA256SUMS_FILE" || true)
+              SHA256_RUST=$(grep -oP '^\K[a-f0-9]{64}(?=\s+slit-rust-linux-x86_64\.tar\.gz$)' "$SHA256SUMS_FILE" || true)
+              SHA256_GO=$(grep -oP '^\K[a-f0-9]{64}(?=\s+slit-go-linux-x86_64\.tar\.gz$)' "$SHA256SUMS_FILE" || true)
+              echo "C: ${SHA256_C:-MISSING}"
+              echo "C-static: ${SHA256_C_STATIC:-MISSING}"
+              echo "Rust: ${SHA256_RUST:-MISSING}"
+              echo "Go: ${SHA256_GO:-MISSING}"
+              find site -name '*.html' -exec sed -i "s/{{SHA256_C}}/${SHA256_C:-see release page}/g" {} +
+              find site -name '*.html' -exec sed -i "s/{{SHA256_C_STATIC}}/${SHA256_C_STATIC:-see release page}/g" {} +
+              find site -name '*.html' -exec sed -i "s/{{SHA256_RUST}}/${SHA256_RUST:-see release page}/g" {} +
+              find site -name '*.html' -exec sed -i "s/{{SHA256_GO}}/${SHA256_GO:-see release page}/g" {} +
+            else
+              find site -name '*.html' -exec sed -i 's/{{SHA256_C}}/see release page/g' {} +
+              find site -name '*.html' -exec sed -i 's/{{SHA256_C_STATIC}}/see release page/g' {} +
+              find site -name '*.html' -exec sed -i 's/{{SHA256_RUST}}/see release page/g' {} +
+              find site -name '*.html' -exec sed -i 's/{{SHA256_GO}}/see release page/g' {} +
+            fi
+            rm -f "$SHA256SUMS_FILE"
           fi
-          rm -f "$SHA256SUMS_FILE"
       - name: Prepare site
         run: cp scripts/install.sh site/install.sh
       - name: Upload artifact
