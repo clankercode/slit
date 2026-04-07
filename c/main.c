@@ -36,7 +36,7 @@ static void print_usage(void) {
     printf("A streaming terminal viewer that displays the last N lines of input.\n");
     printf("\n");
     printf("Core Options:\n");
-    printf("  -n, --lines=N            Number of lines to display (0 = auto)\n");
+    printf("  -n, --lines=N            Number of lines to display (interactive: 0 = auto; passthrough: 0 = pipe all, default = head+tail with N=%d)\n", DEFAULT_PASSTHROUGH_LINES);
     printf("      --max-lines=N        Maximum lines to buffer (default: %d)\n", DEFAULT_MAX_LINES);
     printf("  -o, --output=FILE        Write output to file (tee mode)\n");
     printf("  -a, --append             Append to output file instead of overwrite\n");
@@ -234,16 +234,53 @@ static void format_line_prefix(struct slit_config *cfg, struct line_entry *entry
     buf[pos] = '\0';
 }
 
+/* Non-mutating tee helper — copies line, strips newline, writes to tee */
+static void tee_line(struct tee_writer *tw, const char *line) {
+    size_t slen = strlen(line);
+    char *tmp = malloc(slen + 1);
+    if (!tmp) return;
+    memcpy(tmp, line, slen + 1);
+    while (slen > 0 && (tmp[slen-1] == '\n' || tmp[slen-1] == '\r'))
+        tmp[--slen] = '\0';
+    tee_write_line(tw, tmp);
+    free(tmp);
+}
+
 static void passthrough_mode(struct slit_config *cfg) {
+    int n = cfg->lines;
+    if (n < 0) n = DEFAULT_PASSTHROUGH_LINES;
+
     struct tee_writer *tw = NULL;
-    if (cfg->output) {
+    if (cfg->output)
         tw = tee_open(cfg->output, cfg->append, cfg->tee_format);
-    }
     debug_init(cfg->log_file, cfg->debug);
     debug_log("passthrough mode starting");
+
     char *line = NULL;
     size_t len = 0;
-    while (getline(&line, &len, stdin) != -1) {
+
+    if (n == 0) {
+        while (getline(&line, &len, stdin) != -1) {
+            if (fputs(line, stdout) == EOF) {
+                free(line);
+                if (tw) tee_close(tw);
+                debug_log("passthrough: stdout write error");
+                debug_close();
+                return;
+            }
+            fflush(stdout);
+            if (tw) tee_line(tw, line);
+        }
+        free(line);
+        if (tw) tee_close(tw);
+        debug_log("passthrough mode done");
+        debug_close();
+        return;
+    }
+
+    long long total = 0;
+
+    while (total < (long long)n && getline(&line, &len, stdin) != -1) {
         if (fputs(line, stdout) == EOF) {
             free(line);
             if (tw) tee_close(tw);
@@ -252,13 +289,41 @@ static void passthrough_mode(struct slit_config *cfg) {
             return;
         }
         fflush(stdout);
-        if (tw) {
-            size_t slen = strlen(line);
-            while (slen > 0 && (line[slen-1] == '\n' || line[slen-1] == '\r'))
-                line[--slen] = '\0';
-            tee_write_line(tw, line);
+        if (tw) tee_line(tw, line);
+        total++;
+    }
+
+    char **tail_buf = calloc(n, sizeof(char *));
+    if (!tail_buf) { perror("calloc"); free(line); if (tw) tee_close(tw); return; }
+    size_t tail_head = 0;
+    size_t tail_count = 0;
+
+    while (getline(&line, &len, stdin) != -1) {
+        total++;
+        if (tw) tee_line(tw, line);
+        char *copy = strdup(line);
+        if (!copy) continue;
+        if (tail_count < (size_t)n) {
+            tail_buf[(tail_head + tail_count) % n] = copy;
+            tail_count++;
+        } else {
+            free(tail_buf[tail_head]);
+            tail_buf[tail_head] = copy;
+            tail_head = (tail_head + 1) % n;
         }
     }
+
+    /* Phase 3: separator (if needed) + tail */
+    long long omitted = total - (long long)n - (long long)tail_count;
+    if (omitted > 0)
+        printf("... [%lld lines omitted] ...\n", omitted);
+    for (size_t i = 0; i < tail_count; i++) {
+        size_t idx = (tail_head + i) % n;
+        fputs(tail_buf[idx], stdout);
+        free(tail_buf[idx]);
+    }
+
+    free(tail_buf);
     free(line);
     if (tw) tee_close(tw);
     debug_log("passthrough mode done");

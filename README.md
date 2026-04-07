@@ -22,7 +22,7 @@ Unlike `tail -f` (file only) or `less` (pager, not live), `slit` is purpose-buil
 - **ANSI color passthrough** (`--color=auto|always|never`)
 - **Progress bar** auto-detected from file size; spinner + count for pipes
 - **Tee to file** while viewing (`-o file`, `--tee-format=raw|display`)
-- **Pipe-safe** — renders to stderr; passthrough when stderr isn't a TTY
+- **Pipe-safe** — renders to stderr; passthrough when stderr isn't a TTY (head+tail by default; use `-n 0` to pipe all)
 - **Terminal resize** via SIGWINCH
 - **Config file** (`~/.config/slit/config.toml`)
 - **Shell completions** for bash, zsh, fish
@@ -43,7 +43,7 @@ pytest tests/ | slit --box -o results.log
 # Compact layout with wrap
 ./scripts/slit-test-data gradient | slit --compact -w
 
-# Passthrough for piping (no layout when stderr isn't a tty)
+# Headless: shows first+last 10 lines; use -n 0 to pipe everything
 make build 2>&1 | slit | grep ERROR
 ```
 

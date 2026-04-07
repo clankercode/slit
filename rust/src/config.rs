@@ -57,6 +57,8 @@ pub struct DebugConfig {
 #[derive(Debug, Clone)]
 pub struct Config {
     pub lines: usize,
+    /// True when --lines/-n was explicitly passed on the CLI
+    pub lines_from_cli: bool,
     pub max_lines: usize,
     pub output: Option<PathBuf>,
     pub append: bool,
@@ -77,6 +79,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             lines: 0,
+            lines_from_cli: false,
             max_lines: 50000,
             output: None,
             append: false,
@@ -118,6 +121,7 @@ impl Config {
     fn apply_cli(&mut self, cli: &crate::Cli) {
         if let Some(lines) = cli.lines {
             self.lines = lines;
+            self.lines_from_cli = true;
         }
         if let Some(max_lines) = cli.max_lines {
             self.max_lines = max_lines;
