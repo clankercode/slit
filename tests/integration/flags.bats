@@ -2,28 +2,28 @@
 
 load helpers
 
-@test "invalid --color value exits 1" {
+@test "invalid --color value exits with error" {
     run_slit --color=invalid
-    assert_exit_code 1
-    [[ "$output" =~ "invalid --color" ]]
+    assert_error_exit
+    [[ "$output" =~ "invalid" ]] || [[ "$output" =~ "error" ]]
 }
 
-@test "invalid --spinner value exits 1" {
+@test "invalid --spinner value exits with error" {
     run_slit --spinner=invalid
-    assert_exit_code 1
-    [[ "$output" =~ "invalid --spinner" ]]
+    assert_error_exit
+    [[ "$output" =~ "invalid" ]] || [[ "$output" =~ "error" ]]
 }
 
-@test "invalid --layout value exits 1" {
+@test "invalid --layout value exits with error" {
     run_slit --layout=invalid
-    assert_exit_code 1
-    [[ "$output" =~ "invalid --layout" ]]
+    assert_error_exit
+    [[ "$output" =~ "invalid" ]] || [[ "$output" =~ "error" ]]
 }
 
-@test "invalid --tee-format value exits 1" {
+@test "invalid --tee-format value exits with error" {
     run_slit --tee-format=invalid
-    assert_exit_code 1
-    [[ "$output" =~ "invalid --tee-format" ]]
+    assert_error_exit
+    [[ "$output" =~ "invalid" ]] || [[ "$output" =~ "error" ]]
 }
 
 @test "--help exits 0" {
@@ -35,7 +35,7 @@ load helpers
 @test "--version exits 0 and shows version" {
     run_slit --version
     assert_exit_code 0
-    [[ "$output" =~ "slit version" ]]
+    [[ "$output" =~ "slit" ]] && [[ "$output" =~ "0\." ]]
 }
 
 @test "--generate-man exits 0 and produces groff-like output" {

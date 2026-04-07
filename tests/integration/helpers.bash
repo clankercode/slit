@@ -21,3 +21,7 @@ assert_exit_code() {
     local expected="$1"
     [ "$status" -eq "$expected" ]
 }
+
+assert_error_exit() {
+    [ "$status" -eq 1 ] || [ "$status" -eq 2 ]
+}

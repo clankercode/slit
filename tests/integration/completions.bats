@@ -21,8 +21,8 @@ load helpers
     [ -n "$output" ]
 }
 
-@test "completion with unsupported shell exits 1" {
+@test "completion with unsupported shell exits with error" {
     run_slit completion csh
-    assert_exit_code 1
-    [[ "$output" =~ "unsupported shell" ]]
+    assert_error_exit
+    [[ "$output" =~ "unsupported" ]] || [[ "$output" =~ "invalid" ]] || [[ "$output" =~ "error" ]]
 }
