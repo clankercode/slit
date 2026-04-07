@@ -178,6 +178,10 @@ Suspend and resume gracefully (Ctrl+Z), restoring terminal state.
 
 ## V2 ideas
 
+### Pipe-safe passthrough with head+tail mode
+When stderr isn't a TTY, slit enters passthrough mode: shows first N and last N lines of stdin (default N=10) with a separator for omitted lines. Use `-n 0` to pipe everything through unchanged.
+- **done** (v1)
+
 ### Configurable status line format
 Allow customizing what appears in the status line (line count, byte count, elapsed time, etc).
 - **to be considered**

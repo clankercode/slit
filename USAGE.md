@@ -108,7 +108,7 @@ ls --color=always | slit --color=always
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--quote-bg` | `off` | Quote background: `off` or `on` |
+| `--quote-bg` | `off` | Quote background: `off` or hex color (e.g., `#1a1a2e`) |
 
 ### Debug
 

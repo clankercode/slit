@@ -59,7 +59,7 @@ All three implementations support the same set of CLI flags:
 | `debug` | false | false | false | yes |
 | `log_file` | (auto) | (auto) | (auto) | yes |
 | `RENDER_INTERVAL_MS` | ~33 (100ms spinner tick) | 33ms tick interval | 33ms poll | yes |
-| `version` | 0.2.3 | 0.2.3 | 0.2.3 | yes |
+| `version` | 0.2.4 | 0.2.4 | 0.2.4 | yes |
 
 All defaults are consistent across implementations.
 
@@ -92,7 +92,7 @@ All six layouts are implemented in all three:
 
 ### Passthrough detection
 
-All three check if stderr is a TTY. When it's not, they copy stdin to stdout unchanged. All respect `SLIT_FORCE_RENDER=1`.
+All three check if stderr is a TTY. When it's not, they enter passthrough mode: stdin is copied to stdout. By default, passthrough shows the first N and last N lines (like `head` + `tail`) with a separator for omitted lines. Use `-n 0` to pipe everything through unchanged. All respect `SLIT_FORCE_RENDER=1`.
 
 | Impl | TTY check method |
 |------|-------------------|
@@ -108,9 +108,7 @@ All three read from `$XDG_CONFIG_HOME/slit/config.toml` or `~/.config/slit/confi
 |------|-------------|
 | Go | `github.com/BurntSushi/toml` |
 | Rust | `toml` crate (serde) |
-| C | No TOML parsing (no config file support) |
-
-**Note:** C does not load a config file. It only uses CLI flags and environment variables. This is an intentional limitation — adding a TOML parser in C would add significant dependency weight.
+| C | Built-in minimal TOML parser (`configfile.c`) |
 
 ### Window title
 
@@ -131,8 +129,16 @@ All three set the terminal window title to `slit` via OSC escape sequences when 
 | Impl | Behavior |
 |------|----------|
 | Go | Bubbletea framework handles (restores terminal, suspends, resumes) |
-| Rust | Not explicitly handled (crossterm may handle it) |
+| Rust | Explicitly handled: restores terminal state via `SignalKind::from_raw(libc::SIGTSTP)`, raises SIGSTOP, re-enters raw mode on resume |
 | C | Explicitly handled: restores terminal state, raises SIGSTOP, re-enters raw mode on resume |
+
+### Status line
+
+All three show spinner, line count, human-readable byte count (e.g., `1.5KB`), progress bar (when file size is known), and `q:quit` hint. The byte count display was added to Go and Rust to match the original C implementation.
+
+### Quote background (`--quote-bg`)
+
+All three accept `--quote-bg` with a hex color (e.g., `#1a1a2e`) or `off`. When a hex color is set, the quote layout applies a 24-bit ANSI background color to all lines, padded to full terminal width.
 
 ### EOF behavior
 
@@ -142,10 +148,8 @@ All three show a final "Done" status and wait briefly before exiting (~200ms).
 
 ## Intentional Differences
 
-1. **C has no config file support** — adding a TOML parser in C is not worth the complexity
-2. **C accepts `Q` (uppercase)** — raw terminal reads both cases; Go/Rust frameworks normalize
-3. **Rust does not explicitly handle SIGTSTP** — relies on crossterm behavior
-4. **Go uses Bubbletea's 100ms spinner tick** vs C/Rust using 33ms intervals — visual result is equivalent since spinner increments are timed
+1. **C accepts `Q` (uppercase)** — raw terminal reads both cases; Go/Rust frameworks normalize
+2. **Go uses Bubbletea's 100ms spinner tick** vs C/Rust using 33ms intervals — visual result is equivalent since spinner increments are timed
 
 ---
 
