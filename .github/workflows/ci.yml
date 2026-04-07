@@ -64,7 +64,6 @@ jobs:
           name: go-test-results
           path: |
             go/slit
-            test-output/
           if-no-files-found: ignore
 
   c:

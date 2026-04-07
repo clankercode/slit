@@ -1,20 +1,11 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -Werror -std=c11 -pedantic -D_POSIX_C_SOURCE=200809L
-DEBUG_FLAGS = -g -O0 -fsanitize=address,undefined
 
 TARGET = slit
 SRCS = main.c buffer.c terminal.c render.c layout.c spinner.c status.c tee.c debug.c completion.c
 OBJS = $(SRCS:.c=.o)
 
 TEST_TARGETS = test_buffer test_terminal test_render
-TEST_BUFFER_SRCS = test/test_buffer.c buffer.c
-TEST_BUFFER_OBJS = $(TEST_BUFFER_SRCS:.c=.o)
-
-TEST_TERMINAL_SRCS = test/test_terminal.c terminal.c
-TEST_TERMINAL_OBJS = $(TEST_TERMINAL_SRCS:.c=.o)
-
-TEST_RENDER_SRCS = test/test_render.c render.c
-TEST_RENDER_OBJS = $(TEST_RENDER_SRCS:.c=.o)
 
 PREFIX = /usr/local
 
@@ -31,15 +22,15 @@ $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm -f $(TARGET) $(TEST_TARGETS) $(OBJS) $(TEST_BUFFER_OBJS) $(TEST_TERMINAL_OBJS) $(TEST_RENDER_OBJS)
+	rm -f $(TARGET) $(TEST_TARGETS) $(OBJS)
 
-test_buffer: $(TEST_BUFFER_OBJS)
+test_buffer: test/test_buffer.c buffer.c
 	$(CC) $(CFLAGS) -o $@ $^
 
-test_terminal: $(TEST_TERMINAL_OBJS)
+test_terminal: test/test_terminal.c terminal.c
 	$(CC) $(CFLAGS) -o $@ $^
 
-test_render: $(TEST_RENDER_OBJS)
+test_render: test/test_render.c render.c
 	$(CC) $(CFLAGS) -o $@ $^
 
 test: test_buffer test_terminal test_render
