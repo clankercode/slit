@@ -19,6 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Prepare site
+        run: cp scripts/install.sh site/install.sh
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

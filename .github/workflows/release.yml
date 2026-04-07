@@ -25,10 +25,17 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install C toolchain
-        run: sudo apt-get update && sudo apt-get install -y build-essential
+        run: sudo apt-get update && sudo apt-get install -y build-essential musl-tools
 
       - name: Build C implementation
         run: make build
+        working-directory: c
+
+      - name: Build C implementation (static musl)
+        run: |
+          make clean
+          make build CC=musl-gcc CFLAGS="-Wall -Wextra -Werror -std=c11 -pedantic -D_POSIX_C_SOURCE=200809L -O2 -static"
+          mv slit slit-static
         working-directory: c
 
       - name: Build Go implementation
@@ -42,11 +49,13 @@ jobs:
       - name: Prepare release assets
         run: |
           rm -rf dist
-          mkdir -p dist/pkg/c/bin dist/pkg/go/bin dist/pkg/rust/bin dist/docs/man dist/docs/completions
+          mkdir -p dist/pkg/c/bin dist/pkg/c-static/bin dist/pkg/go/bin dist/pkg/rust/bin dist/docs/man dist/docs/completions
           cp c/slit dist/pkg/c/bin/slit
+          cp c/slit-static dist/pkg/c-static/bin/slit
           cp go/slit dist/pkg/go/bin/slit
           cp rust/target/release/slit dist/pkg/rust/bin/slit
           cp LICENSE README.md dist/pkg/c/
+          cp LICENSE README.md dist/pkg/c-static/
           cp LICENSE README.md dist/pkg/go/
           cp LICENSE README.md dist/pkg/rust/
           ./go/slit --generate-man > dist/docs/man/slit.1
@@ -54,6 +63,7 @@ jobs:
           ./go/slit completion zsh > dist/docs/completions/_slit
           ./go/slit completion fish > dist/docs/completions/slit.fish
           tar -C dist/pkg/c -czf dist/slit-c-linux-x86_64.tar.gz .
+          tar -C dist/pkg/c-static -czf dist/slit-c-linux-x86_64-static.tar.gz .
           tar -C dist/pkg/go -czf dist/slit-go-linux-x86_64.tar.gz .
           tar -C dist/pkg/rust -czf dist/slit-rust-linux-x86_64.tar.gz .
           tar -C dist/docs -czf dist/slit-docs.tar.gz .
@@ -66,6 +76,7 @@ jobs:
           name: release-assets
           path: |
             dist/slit-c-linux-x86_64.tar.gz
+            dist/slit-c-linux-x86_64-static.tar.gz
             dist/slit-go-linux-x86_64.tar.gz
             dist/slit-rust-linux-x86_64.tar.gz
             dist/slit-docs.tar.gz
@@ -88,6 +99,7 @@ jobs:
         run: |
           files=(
             dist/slit-c-linux-x86_64.tar.gz
+            dist/slit-c-linux-x86_64-static.tar.gz
             dist/slit-go-linux-x86_64.tar.gz
             dist/slit-rust-linux-x86_64.tar.gz
             dist/slit-docs.tar.gz

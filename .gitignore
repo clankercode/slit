@@ -5,3 +5,4 @@ target/
 *.o
 __pycache__/
 benchmark-results.txt
+tmp.*.md
