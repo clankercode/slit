@@ -35,7 +35,7 @@ type FileConfig struct {
 
 type Config struct {
 	Lines          int
-	LinesChanged   bool
+	LinesFromCLI   bool // true when --lines was explicitly passed via CLI (allows -n 0 to mean pipe-all)
 	MaxLines       int
 	Output         string
 	Append         bool

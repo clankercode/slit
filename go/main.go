@@ -71,8 +71,10 @@ var rootCmd = &cobra.Command{
 		forceRender := os.Getenv("SLIT_FORCE_RENDER") == "1"
 		if !forceRender && !term.IsTerminal(int(os.Stderr.Fd())) {
 			n := 10
-			if cfg.LinesChanged {
-				n = cfg.Lines
+			if cfg.LinesFromCLI {
+				n = cfg.Lines // CLI: -n 0 means pipe-all, any other value used directly
+			} else if cfg.Lines != 0 {
+				n = cfg.Lines // TOML config: non-zero only (0 is indistinguishable from unset)
 			}
 
 			var tw *TeeWriter
@@ -259,7 +261,7 @@ func resolveConfig(cmd *cobra.Command) (*Config, error) {
 
 	if cmd.Flags().Changed("lines") {
 		cfg.Lines = flagLines
-		cfg.LinesChanged = true
+		cfg.LinesFromCLI = true
 	}
 	if cmd.Flags().Changed("max-lines") {
 		cfg.MaxLines = flagMaxLines
