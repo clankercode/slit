@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -143,5 +144,34 @@ func ApplyFileConfig(base Config) Config {
 	if err != nil {
 		return base
 	}
-	return MergeConfig(base, file)
+	merged := MergeConfig(base, file)
+	if err := ValidateConfig(&merged); err != nil {
+		fmt.Fprintf(os.Stderr, "warning: config file: %v\n", err)
+		return base
+	}
+	return merged
+}
+
+func ValidateConfig(cfg *Config) error {
+	validLayouts := map[string]bool{"box": true, "rounded": true, "compact": true, "minimal": true, "none": true, "quote": true}
+	if cfg.Layout != "" && !validLayouts[cfg.Layout] {
+		return fmt.Errorf("invalid layout %q: must be box, rounded, compact, minimal, none, or quote", cfg.Layout)
+	}
+
+	validColors := map[string]bool{"auto": true, "always": true, "never": true}
+	if cfg.Color != "" && !validColors[cfg.Color] {
+		return fmt.Errorf("invalid color %q: must be auto, always, or never", cfg.Color)
+	}
+
+	validSpinners := map[string]bool{"braille": true, "dots": true, "arrows": true, "off": true}
+	if cfg.Spinner != "" && !validSpinners[cfg.Spinner] {
+		return fmt.Errorf("invalid spinner %q: must be braille, dots, arrows, or off", cfg.Spinner)
+	}
+
+	validTeeFormats := map[string]bool{"raw": true, "display": true}
+	if cfg.TeeFormat != "" && !validTeeFormats[cfg.TeeFormat] {
+		return fmt.Errorf("invalid tee-format %q: must be raw or display", cfg.TeeFormat)
+	}
+
+	return nil
 }

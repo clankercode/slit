@@ -11,7 +11,7 @@ import (
 	"golang.org/x/term"
 )
 
-var version = "0.2.3"
+var version = "0.2.4"
 
 var (
 	flagLines          int
@@ -59,6 +59,11 @@ var rootCmd = &cobra.Command{
 
 		cfg, err := resolveConfig(cmd)
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(1)
+		}
+
+		if err := ValidateConfig(cfg); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(1)
 		}

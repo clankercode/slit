@@ -212,3 +212,69 @@ func TestLoadConfigFileInvalidTOML(t *testing.T) {
 		t.Error("expected error for invalid TOML")
 	}
 }
+
+func TestValidateConfigRejectsInvalidLayout(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Layout = "bogus"
+	err := ValidateConfig(&cfg)
+	if err == nil {
+		t.Error("expected error for invalid layout")
+	}
+}
+
+func TestValidateConfigRejectsInvalidColor(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Color = "burgundy"
+	err := ValidateConfig(&cfg)
+	if err == nil {
+		t.Error("expected error for invalid color")
+	}
+}
+
+func TestValidateConfigRejectsInvalidSpinner(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Spinner = "spinny"
+	err := ValidateConfig(&cfg)
+	if err == nil {
+		t.Error("expected error for invalid spinner")
+	}
+}
+
+func TestValidateConfigRejectsInvalidTeeFormat(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.TeeFormat = "pdf"
+	err := ValidateConfig(&cfg)
+	if err == nil {
+		t.Error("expected error for invalid tee-format")
+	}
+}
+
+func TestValidateConfigAcceptsValidValues(t *testing.T) {
+	cfg := DefaultConfig()
+	err := ValidateConfig(&cfg)
+	if err != nil {
+		t.Errorf("expected no error for valid config, got %v", err)
+	}
+}
+
+func TestApplyFileConfigRejectsInvalidLayout(t *testing.T) {
+	dir := t.TempDir()
+	os.Setenv("XDG_CONFIG_HOME", dir)
+	defer os.Unsetenv("XDG_CONFIG_HOME")
+
+	cfgDir := filepath.Join(dir, "slit")
+	os.MkdirAll(cfgDir, 0755)
+
+	configContent := `
+[display]
+layout = "nonexistent"
+`
+	os.WriteFile(filepath.Join(cfgDir, "config.toml"), []byte(configContent), 0644)
+
+	base := DefaultConfig()
+	result := ApplyFileConfig(base)
+
+	if result.Layout != "minimal" {
+		t.Errorf("expected layout to stay 'minimal' after invalid config, got %q", result.Layout)
+	}
+}

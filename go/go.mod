@@ -1,4 +1,4 @@
-module github.com/clankercode/slit
+module github.com/clankercode/slit/go
 
 go 1.26.1
 
