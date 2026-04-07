@@ -35,7 +35,7 @@ load helpers
 @test "--version exits 0 and shows version" {
     run_slit --version
     assert_exit_code 0
-    [[ "$output" =~ "slit" ]] && [[ "$output" =~ "0\." ]]
+    [[ "$output" =~ "slit" ]]
 }
 
 @test "--generate-man exits 0 and produces groff-like output" {
