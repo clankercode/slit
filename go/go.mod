@@ -1,4 +1,4 @@
-module github.com/xertrov/slit
+module github.com/clankercode/slit
 
 go 1.26.1
 

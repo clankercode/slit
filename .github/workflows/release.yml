@@ -39,7 +39,7 @@ jobs:
         working-directory: c
 
       - name: Build Go implementation
-        run: go build -o slit .
+        run: go build -ldflags="-s -w" -o slit .
         working-directory: go
 
       - name: Build Rust implementation

@@ -17,11 +17,11 @@
       --border:     #1a1a1a;
       --border2:    #242424;
       --text:       #c8c8c8;
-      --dim:        #666;
+      --dim:         #666;
       --faint:      #333;
       --accent:     #00e5ff;
       --accent-lo:  rgba(0,229,255,0.07);
-      --font:       'JetBrains Mono', monospace;
+      --font:        'JetBrains Mono', monospace;
     }
 
     html { scroll-behavior: smooth; }
@@ -36,7 +36,6 @@
 
     a { color: inherit; text-decoration: none; }
 
-    /* ─── NAV ──────────────────────────────────────────────── */
     nav {
       display: flex;
       align-items: center;
@@ -70,7 +69,6 @@
     .nav-links a:hover,
     .nav-links a.active { color: var(--accent); }
 
-    /* ─── PAGE ─────────────────────────────────────────────── */
     .page {
       max-width: 900px;
       margin: 0 auto;
@@ -101,7 +99,6 @@
       margin-bottom: 3.5rem;
     }
 
-    /* ─── VERSION SELECTOR ────────────────────────────────── */
     .version-row {
       display: flex;
       align-items: center;
@@ -110,14 +107,12 @@
       padding-bottom: 1.5rem;
       border-bottom: 1px solid var(--border);
     }
-
     .version-label {
       font-size: 0.65rem;
       text-transform: uppercase;
       letter-spacing: 0.15em;
       color: var(--dim);
     }
-
     .version-tag {
       font-size: 0.82rem;
       font-weight: 700;
@@ -125,13 +120,11 @@
       border: 1px solid rgba(0,229,255,0.3);
       padding: 0.2em 0.6em;
     }
-
     .version-date {
       font-size: 0.72rem;
       color: var(--faint);
       margin-left: auto;
     }
-
     .changelog-link {
       font-size: 0.72rem;
       color: var(--dim);
@@ -139,7 +132,6 @@
     }
     .changelog-link:hover { color: var(--accent); }
 
-    /* ─── PLATFORM TABS ───────────────────────────────────── */
     .platform-tabs {
       display: flex;
       gap: 0;
@@ -148,7 +140,6 @@
       border-bottom: none;
       width: fit-content;
     }
-
     .tab-btn {
       background: none;
       border: none;
@@ -169,7 +160,6 @@
       background: var(--accent-lo);
     }
 
-    /* ─── DOWNLOAD TABLE ──────────────────────────────────── */
     .dl-panel {
       display: none;
       border: 1px solid var(--border);
@@ -180,11 +170,9 @@
       width: 100%;
       border-collapse: collapse;
     }
-
     .dl-table thead tr {
       border-bottom: 1px solid var(--border2);
     }
-
     .dl-table th {
       text-align: left;
       padding: 0.75rem 1rem;
@@ -194,7 +182,6 @@
       color: var(--dim);
       font-weight: 400;
     }
-
     .dl-table td {
       padding: 1rem;
       border-bottom: 1px solid var(--border);
@@ -218,18 +205,15 @@
       color: var(--faint);
       margin-top: 0.2rem;
     }
-
     .file-name {
       color: var(--text);
       font-size: 0.78rem;
     }
-
     .file-size {
       color: var(--dim);
       font-size: 0.72rem;
       white-space: nowrap;
     }
-
     .checksum {
       font-size: 0.62rem;
       color: var(--faint);
@@ -246,7 +230,6 @@
       font-size: 0.5rem;
       opacity: 0.4;
     }
-
     .dl-link {
       display: inline-flex;
       align-items: center;
@@ -274,12 +257,9 @@
       border-color: #fff;
       color: #000;
     }
-
-    /* ─── BUILD FROM SOURCE ───────────────────────────────── */
     .source-section {
       margin-top: 4rem;
     }
-
     h2 {
       font-size: 1.3rem;
       font-weight: 700;
@@ -287,7 +267,6 @@
       letter-spacing: -0.03em;
       margin-bottom: 1.25rem;
     }
-
     .source-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -295,13 +274,11 @@
       border: 1px solid var(--border);
       margin-top: 1.5rem;
     }
-
     .source-card {
       padding: 1.5rem;
       border-right: 1px solid var(--border);
     }
     .source-card:last-child { border-right: none; }
-
     .source-lang {
       font-size: 0.85rem;
       font-weight: 700;
@@ -311,7 +288,6 @@
     .source-lang.c    { color: #aac8ff; }
     .source-lang.rust { color: #ff8c5a; }
     .source-lang.go   { color: #79c9e8; }
-
     pre.source-cmd {
       font-size: 0.73rem;
       color: var(--text);
@@ -321,41 +297,33 @@
       overflow-x: auto;
       line-height: 1.55;
     }
-
     pre.source-cmd .prompt { color: var(--faint); }
     pre.source-cmd .cmd    { color: #e0e0e0; }
     pre.source-cmd .flag   { color: var(--accent); }
-
-    /* ─── CHECKSUMS INFO ──────────────────────────────────── */
     .verify-section {
       margin-top: 3.5rem;
       padding: 1.5rem;
       border: 1px solid var(--border);
       background: var(--surface);
     }
-
     .verify-section h3 {
       font-size: 0.8rem;
       font-weight: 700;
       color: #d0d0d0;
       margin-bottom: 0.75rem;
     }
-
     .verify-section p {
       font-size: 0.75rem;
       color: var(--dim);
       line-height: 1.65;
       margin-bottom: 0.5rem;
     }
-
     pre.verify-cmd {
       font-size: 0.73rem;
       color: var(--accent);
       margin-top: 0.75rem;
       line-height: 1.6;
     }
-
-    /* ─── FOOTER ──────────────────────────────────────────── */
     footer {
       border-top: 1px solid var(--border);
       padding: 2rem 2.5rem;
@@ -367,7 +335,6 @@
     }
     .footer-links { display: flex; gap: 1.5rem; }
     footer a:hover { color: var(--accent); }
-
     @media (max-width: 720px) {
       .source-grid { grid-template-columns: 1fr; }
       .source-card { border-right: none; border-bottom: 1px solid var(--border); }
@@ -404,21 +371,17 @@
     <span class="version-date">latest release</span>
   </div>
 
-  <!-- platform tabs -->
   <div class="platform-tabs">
     <button class="tab-btn active" onclick="showPlatform('linux-x64', this)">Linux x86_64</button>
-    <button class="tab-btn" onclick="showPlatform('linux-arm64', this)">Linux arm64</button>
     <button class="tab-btn" onclick="showPlatform('source', this)">source</button>
   </div>
 
-  <!-- linux x86_64 panel -->
   <div class="dl-panel active" id="panel-linux-x64">
     <table class="dl-table">
       <thead>
         <tr>
           <th>implementation</th>
           <th>file</th>
-          <th>size</th>
           <th>sha256</th>
           <th></th>
         </tr>
@@ -429,15 +392,31 @@
             <div class="lang-name c">C</div>
             <div class="lang-meta">libc only · 151.8 MB/s</div>
           </td>
-          <td><span class="file-name">slit-c-linux-x64</span></td>
-          <td><span class="file-size">64 KB</span></td>
+          <td><span class="file-name">slit-c-linux-x86_64.tar.gz</span></td>
           <td>
-            <span class="checksum" title="click to copy" onclick="copyText('—', this)">
-              see release page
+            <span class="checksum" title="click to copy" onclick="copyText('{{SHA256_C}}', this)">
+              {{SHA256_C}}
             </span>
           </td>
           <td>
-            <a class="dl-link primary" href="https://github.com/clankercode/slit/releases/latest" target="_blank" rel="noopener">
+            <a class="dl-link primary" href="https://github.com/clankercode/slit/releases/latest/download/slit-c-linux-x86_64.tar.gz">
+              ↓ download
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <div class="lang-name c">C (static)</div>
+            <div class="lang-meta">musl · fully portable</div>
+          </td>
+          <td><span class="file-name">slit-c-linux-x86_64-static.tar.gz</span></td>
+          <td>
+            <span class="checksum" title="click to copy" onclick="copyText('{{SHA256_C_STATIC}}', this)">
+              {{SHA256_C_STATIC}}
+            </span>
+          </td>
+          <td>
+            <a class="dl-link" href="https://github.com/clankercode/slit/releases/latest/download/slit-c-linux-x86_64-static.tar.gz">
               ↓ download
             </a>
           </td>
@@ -447,15 +426,14 @@
             <div class="lang-name rust">Rust</div>
             <div class="lang-meta">ratatui · 77.5 MB/s</div>
           </td>
-          <td><span class="file-name">slit-rust-linux-x64</span></td>
-          <td><span class="file-size">2.2 MB</span></td>
+          <td><span class="file-name">slit-rust-linux-x86_64.tar.gz</span></td>
           <td>
-            <span class="checksum" title="click to copy" onclick="copyText('—', this)">
-              see release page
+            <span class="checksum" title="click to copy" onclick="copyText('{{SHA256_RUST}}', this)">
+              {{SHA256_RUST}}
             </span>
           </td>
           <td>
-            <a class="dl-link" href="https://github.com/clankercode/slit/releases/latest" target="_blank" rel="noopener">
+            <a class="dl-link" href="https://github.com/clankercode/slit/releases/latest/download/slit-rust-linux-x86_64.tar.gz">
               ↓ download
             </a>
           </td>
@@ -465,15 +443,14 @@
             <div class="lang-name go">Go</div>
             <div class="lang-meta">bubbletea · 9.8 MB/s</div>
           </td>
-          <td><span class="file-name">slit-go-linux-x64</span></td>
-          <td><span class="file-size">6.0 MB</span></td>
+          <td><span class="file-name">slit-go-linux-x86_64.tar.gz</span></td>
           <td>
-            <span class="checksum" title="click to copy" onclick="copyText('—', this)">
-              see release page
+            <span class="checksum" title="click to copy" onclick="copyText('{{SHA256_GO}}', this)">
+              {{SHA256_GO}}
             </span>
           </td>
           <td>
-            <a class="dl-link" href="https://github.com/clankercode/slit/releases/latest" target="_blank" rel="noopener">
+            <a class="dl-link" href="https://github.com/clankercode/slit/releases/latest/download/slit-go-linux-x86_64.tar.gz">
               ↓ download
             </a>
           </td>
@@ -482,32 +459,8 @@
     </table>
   </div>
 
-  <!-- linux arm64 panel -->
-  <div class="dl-panel" id="panel-linux-arm64">
-    <table class="dl-table">
-      <thead>
-        <tr>
-          <th>implementation</th>
-          <th>file</th>
-          <th>size</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td colspan="4" style="padding:2rem;color:var(--faint);font-size:0.78rem;text-align:center;">
-            arm64 binaries coming soon.<br>
-            <a href="https://github.com/clankercode/slit" target="_blank" rel="noopener" style="color:var(--accent);margin-top:0.5rem;display:inline-block;">
-              build from source ↗
-            </a>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- source panel -->
   <div class="dl-panel" id="panel-source">
+
     <table class="dl-table">
       <thead>
         <tr>
@@ -554,7 +507,6 @@
     </table>
   </div>
 
-  <!-- build from source -->
   <div class="source-section">
     <div class="eyebrow">build from source</div>
     <h2>Compile it yourself.</h2>
@@ -587,15 +539,13 @@ slit {{VERSION}} (go)</pre>
     </div>
   </div>
 
-  <!-- verify section -->
   <div class="verify-section">
     <h3>Verify your download</h3>
-    <p>SHA256 checksums are published alongside each release on GitHub.</p>
+    <p>Download the checksums from the SHA256SUMS file published alongside each release on GitHub.</p>
     <p>Verify with:</p>
-    <pre class="verify-cmd">sha256sum -c slit-linux-x64.sha256</pre>
+    <pre class="verify-cmd">sha256sum -c SHA256SUMS</pre>
   </div>
 
-  <!-- go install one-liner -->
   <div style="margin-top:3.5rem;padding:2rem;border:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
     <div>
       <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.18em;color:var(--dim);margin-bottom:0.4rem;">quickest start</div>
@@ -631,7 +581,6 @@ function copyText(text, el) {
     el.textContent = 'copied!';
     setTimeout(() => { el.textContent = orig; }, 1800);
   }).catch(() => {
-    // select fallback
     const range = document.createRange();
     range.selectNode(el);
     window.getSelection().removeAllRanges();

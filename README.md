@@ -135,6 +135,7 @@ Buffer
 Meta
   -d, --debug              Write diagnostics to log file
       --log-file string    Custom debug log file path
+      --version            Show version info
 ```
 
 > See [USAGE.md](USAGE.md) for comprehensive documentation including config file format, environment variables, and tips.

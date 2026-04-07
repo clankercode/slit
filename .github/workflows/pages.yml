@@ -19,11 +19,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Inject version
+      - name: Inject version and checksums
         run: |
           VERSION=$(curl -sL "https://api.github.com/repos/clankercode/slit/releases/latest" | grep '"tag_name"' | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
           echo "Latest version: ${VERSION:-unknown}"
           find site -name '*.html' -exec sed -i "s/{{VERSION}}/${VERSION:-dev}/g" {} +
+
+          SHA256SUMS_FILE=$(mktemp)
+          if curl -sLf "https://github.com/clankercode/slit/releases/latest/download/SHA256SUMS" -o "$SHA256SUMS_FILE"; then
+            SHA256_C=$(grep -oP '^\K[a-f0-9]{64}(?=\s+slit-c-linux-x86_64\.tar\.gz$)' "$SHA256SUMS_FILE" || true)
+            SHA256_C_STATIC=$(grep -oP '^\K[a-f0-9]{64}(?=\s+slit-c-linux-x86_64-static\.tar\.gz$)' "$SHA256SUMS_FILE" || true)
+            SHA256_RUST=$(grep -oP '^\K[a-f0-9]{64}(?=\s+slit-rust-linux-x86_64\.tar\.gz$)' "$SHA256SUMS_FILE" || true)
+            SHA256_GO=$(grep -oP '^\K[a-f0-9]{64}(?=\s+slit-go-linux-x86_64\.tar\.gz$)' "$SHA256SUMS_FILE" || true)
+            find site -name '*.html' -exec sed -i "s/{{SHA256_C}}/${SHA256_C:-see release page}/g" {} +
+            find site -name '*.html' -exec sed -i "s/{{SHA256_C_STATIC}}/${SHA256_C_STATIC:-see release page}/g" {} +
+            find site -name '*.html' -exec sed -i "s/{{SHA256_RUST}}/${SHA256_RUST:-see release page}/g" {} +
+            find site -name '*.html' -exec sed -i "s/{{SHA256_GO}}/${SHA256_GO:-see release page}/g" {} +
+          else
+            find site -name '*.html' -exec sed -i 's/{{SHA256_C}}/see release page/g' {} +
+            find site -name '*.html' -exec sed -i 's/{{SHA256_C_STATIC}}/see release page/g' {} +
+            find site -name '*.html' -exec sed -i 's/{{SHA256_RUST}}/see release page/g' {} +
+            find site -name '*.html' -exec sed -i 's/{{SHA256_GO}}/see release page/g' {} +
+          fi
+          rm -f "$SHA256SUMS_FILE"
       - name: Prepare site
         run: cp scripts/install.sh site/install.sh
       - name: Upload artifact
