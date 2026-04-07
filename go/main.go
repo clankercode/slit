@@ -89,7 +89,9 @@ var rootCmd = &cobra.Command{
 				for scanner.Scan() {
 					line := scanner.Text()
 					fmt.Println(line)
-					if tw != nil { tw.WriteLine(line) }
+					if tw != nil {
+						tw.WriteLine(line)
+					}
 				}
 			} else {
 				// head+tail mode
@@ -99,7 +101,9 @@ var rootCmd = &cobra.Command{
 				for total < n && scanner.Scan() {
 					line := scanner.Text()
 					fmt.Println(line)
-					if tw != nil { tw.WriteLine(line) }
+					if tw != nil {
+						tw.WriteLine(line)
+					}
 					total++
 				}
 
@@ -109,7 +113,9 @@ var rootCmd = &cobra.Command{
 				tailCount := 0
 				for scanner.Scan() {
 					line := scanner.Text()
-					if tw != nil { tw.WriteLine(line) }
+					if tw != nil {
+						tw.WriteLine(line)
+					}
 					total++
 					if tailCount < n {
 						tailBuf[(tailHead+tailCount)%n] = line
@@ -133,7 +139,9 @@ var rootCmd = &cobra.Command{
 			if err := scanner.Err(); err != nil {
 				fmt.Fprintf(os.Stderr, "slit: stdin read error: %v\n", err)
 			}
-			if tw != nil { tw.Close() }
+			if tw != nil {
+				tw.Close()
+			}
 			return
 		}
 
