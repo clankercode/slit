@@ -239,6 +239,65 @@ static void test_bug5_wrap_wide_char(void) {
     wrap_lines_free(lines, count);
 }
 
+static void test_bug6_osc_st_terminator_visible_strlen(void) {
+    ASSERT(visible_strlen("\x1b]0;title\x1b\\text") == 4);
+    ASSERT(visible_strlen("\x1b]0;title\x07text") == 4);
+}
+
+static void test_bug6_osc_st_terminator_strip_ansi(void) {
+    char dst[256];
+    strip_ansi("\x1b]0;title\x1b\\hello", dst, sizeof(dst));
+    ASSERT_STREQ(dst, "hello");
+}
+
+static void test_bug6_osc_st_terminator_trim_line(void) {
+    char dst[256];
+    trim_line("\x1b]0;title\x1b\\hello world", dst, sizeof(dst), 5, "...");
+    ASSERT(visible_strlen(dst) == 5);
+}
+
+static void test_bug7_wrap_sgr_reset_leading_zeros(void) {
+    char **lines = NULL;
+    int count = 0;
+    wrap_line("\x1b[31mhello\x1b[00m world", 5, &lines, &count);
+    ASSERT(count == 3);
+    ASSERT(visible_strlen(lines[0]) == 5);
+    ASSERT(visible_strlen(lines[1]) == 5);
+    ASSERT(visible_strlen(lines[2]) == 1);
+    char stripped[256];
+    strip_ansi(lines[1], stripped, sizeof(stripped));
+    ASSERT_STREQ(stripped, " worl");
+    wrap_lines_free(lines, count);
+}
+
+static void test_bug7_wrap_sgr_reset_empty_params(void) {
+    char **lines = NULL;
+    int count = 0;
+    wrap_line("\x1b[31mhello\x1b[m world", 5, &lines, &count);
+    ASSERT(count == 3);
+    ASSERT(visible_strlen(lines[0]) == 5);
+    ASSERT(visible_strlen(lines[1]) == 5);
+    ASSERT(visible_strlen(lines[2]) == 1);
+    char stripped[256];
+    strip_ansi(lines[1], stripped, sizeof(stripped));
+    ASSERT_STREQ(stripped, " worl");
+    wrap_lines_free(lines, count);
+}
+
+static void test_bug7_wrap_sgr_reset_multiple_zeros(void) {
+    char **lines = NULL;
+    int count = 0;
+    wrap_line("\x1b[31mhello\x1b[000m world", 5, &lines, &count);
+    ASSERT(count == 3);
+    ASSERT(visible_strlen(lines[0]) == 5);
+    ASSERT(visible_strlen(lines[1]) == 5);
+    ASSERT(visible_strlen(lines[2]) == 1);
+    char stripped[256];
+    strip_ansi(lines[1], stripped, sizeof(stripped));
+    ASSERT_STREQ(stripped, " worl");
+    wrap_lines_free(lines, count);
+}
+
 int main(void) {
     test_visible_strlen_plain();
     test_visible_strlen_ansi();
@@ -263,6 +322,13 @@ int main(void) {
     test_bug5_visible_width_maze_char();
     test_bug5_trim_wide_char();
     test_bug5_wrap_wide_char();
+
+    test_bug6_osc_st_terminator_visible_strlen();
+    test_bug6_osc_st_terminator_strip_ansi();
+    test_bug6_osc_st_terminator_trim_line();
+    test_bug7_wrap_sgr_reset_leading_zeros();
+    test_bug7_wrap_sgr_reset_empty_params();
+    test_bug7_wrap_sgr_reset_multiple_zeros();
 
     if (failures > 0) {
         fprintf(stderr, "\n%d test(s) FAILED\n", failures);

@@ -212,6 +212,9 @@ size_t visible_strlen(const char *s) {
         } else if (state == 3) {
             if (*p == '\x07') {
                 state = 0;
+            } else if (*p == '\x1b' && p[1] == '\\') {
+                p++;
+                state = 0;
             }
         }
     }
@@ -242,6 +245,9 @@ size_t strip_ansi(const char *src, char *dst, size_t dst_size) {
             }
         } else if (state == 3) {
             if (*p == '\x07') {
+                state = 0;
+            } else if (*p == '\x1b' && p[1] == '\\') {
+                p++;
                 state = 0;
             }
         }
@@ -318,6 +324,10 @@ size_t trim_line(const char *src, char *dst, size_t dst_size, size_t width, cons
             if (di + 1 < dst_size) dst[di++] = src[si];
             if (c == '\x07') {
                 state = 0;
+            } else if (c == '\x1b' && si + 1 < src_len && (unsigned char)src[si + 1] == '\\') {
+                if (di + 1 < dst_size) dst[di++] = '\\';
+                si++;
+                state = 0;
             }
         }
     }
@@ -392,15 +402,25 @@ int wrap_line(const char *line, size_t width, char ***out_lines, int *out_count)
                 while (i < line_len) {
                     unsigned char sc = (unsigned char)line[i];
                     if (sc >= '@' && sc <= '~') {
-                        if (sc == 'm') {
-                            size_t slen = i - seq_start + 1;
-                            if (slen == 4 && line[seq_start + 2] == '0') {
-                                active_sgr_len = 0;
-                            } else if (slen < sizeof(active_sgr)) {
-                                memcpy(active_sgr, line + seq_start, slen);
-                                active_sgr_len = slen;
+                    if (sc == 'm') {
+                        size_t slen = i - seq_start + 1;
+                        int is_reset = 0;
+                        if (slen == 3 || (slen == 4 && line[seq_start + 2] == 'm')) {
+                            is_reset = 1;
+                        } else {
+                            int all_zero = 1;
+                            for (size_t k = seq_start + 2; k < i; k++) {
+                                if (line[k] != '0') { all_zero = 0; break; }
                             }
+                            if (all_zero) is_reset = 1;
                         }
+                        if (is_reset) {
+                            active_sgr_len = 0;
+                        } else if (slen < sizeof(active_sgr)) {
+                            memcpy(active_sgr, line + seq_start, slen);
+                            active_sgr_len = slen;
+                        }
+                    }
                         i++;
                         break;
                     }
@@ -410,6 +430,7 @@ int wrap_line(const char *line, size_t width, char ***out_lines, int *out_count)
                 i++;
                 while (i < line_len) {
                     if ((unsigned char)line[i] == '\x07') { i++; break; }
+                    if ((unsigned char)line[i] == '\x1b' && i + 1 < line_len && (unsigned char)line[i + 1] == '\\') { i += 2; break; }
                     i++;
                 }
             } else {
