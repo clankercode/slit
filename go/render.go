@@ -220,7 +220,7 @@ func WrapLineANSI(line string, width int) []string {
 			continue
 		}
 
-		if visible >= width {
+		if visible+runewidth.RuneWidth(runes[i]) > width {
 			if len(activeSGR) > 0 {
 				currentLine = append(currentLine, []rune("\x1b[0m")...)
 			}

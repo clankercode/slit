@@ -50,7 +50,11 @@ main() {
     tar -xzf "$tmp/$artifact" -C "$tmp"
 
     mkdir -p "$INSTALL_DIR"
-    mv "$tmp/$BINARY" "$INSTALL_DIR/$BINARY"
+    if [ -f "$tmp/bin/$BINARY" ]; then
+        mv "$tmp/bin/$BINARY" "$INSTALL_DIR/$BINARY"
+    else
+        mv "$tmp/$BINARY" "$INSTALL_DIR/$BINARY"
+    fi
     chmod 755 "$INSTALL_DIR/$BINARY"
 
     printf '\n  installed %s to %s/%s\n' "$impl" "$INSTALL_DIR" "$BINARY"

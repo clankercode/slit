@@ -28,7 +28,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y build-essential musl-tools upx
 
       - name: Build C implementation
-        run: make build
+        run: make build CFLAGS="-Wall -Wextra -Werror -std=c11 -pedantic -D_POSIX_C_SOURCE=200809L -O2"
         working-directory: c
 
       - name: Build C implementation (static musl)
@@ -51,6 +51,7 @@ jobs:
       - name: Optimize binaries
         run: |
           strip -s c/slit
+          c/slit --version
           strip -s c/slit-static
           upx --best c/slit-static
           c/slit-static --version

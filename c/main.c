@@ -434,17 +434,12 @@ int main(int argc, char *argv[]) {
                 {
                     char *endp;
                     long val = strtol(optarg, &endp, 10);
-                    if (*endp != '\0' || val <= 0) {
-                        fprintf(stderr, "Error: --lines must be a positive integer\n");
+                    if (*endp != '\0' || val < 0) {
+                        fprintf(stderr, "Error: --lines must be a non-negative integer\n");
                         free_config(&cfg);
                         return 1;
                     }
                     cfg.lines = (int)val;
-                }
-                if (cfg.lines < 0) {
-                    fprintf(stderr, "Error: --lines must be >= 0\n");
-                    free_config(&cfg);
-                    return 1;
                 }
                 break;
             case 'o':
@@ -698,7 +693,7 @@ int main(int argc, char *argv[]) {
                     buffer_push(buf, entry);
                 }
 
-                if (tw) {
+                if (tw && entry) {
                     if (cfg.tee_format == TEE_DISPLAY) {
                         char dtmp[4096], stripped[4096];
                         dtmp[0] = '\0';
@@ -717,15 +712,17 @@ int main(int argc, char *argv[]) {
                                             "%*zu ", gw, entry->line_num);
                         }
                         if (cfg.color == COLOR_NEVER || (cfg.color == COLOR_AUTO && !is_stderr_tty())) {
-                            snprintf(dtmp + pos, sizeof(dtmp) - pos, "%s", line);
-                        } else {
                             strip_ansi(line, stripped, sizeof(stripped));
                             snprintf(dtmp + pos, sizeof(dtmp) - pos, "%s", stripped);
+                        } else {
+                            snprintf(dtmp + pos, sizeof(dtmp) - pos, "%s", line);
                         }
                         tee_write_line(tw, dtmp);
                     } else {
                         tee_write_line(tw, line);
                     }
+                } else if (tw) {
+                    tee_write_line(tw, line);
                 }
 
                 dirty = 1;

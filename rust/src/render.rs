@@ -160,7 +160,33 @@ pub fn trim_line_ansi(line: &str, width_limit: usize, trunc_char: &str) -> Strin
     }
 
     let mut out: String = result.iter().collect();
+    let mut sgr_depth = 0;
+    let mut j = 0;
+    let chars: Vec<char> = out.chars().collect();
+    while j < chars.len() {
+        if chars[j] == '\x1b' && j + 1 < chars.len() && chars[j + 1] == '[' {
+            let mut k = j + 2;
+            let mut params = String::new();
+            while k < chars.len() && !chars[k].is_ascii_alphabetic() {
+                params.push(chars[k]);
+                k += 1;
+            }
+            if k < chars.len() && chars[k] == 'm' {
+                if params.trim() == "0" || params.trim().is_empty() {
+                    sgr_depth = 0;
+                } else {
+                    sgr_depth += 1;
+                }
+            }
+            j = k + 1;
+        } else {
+            j += 1;
+        }
+    }
     out.push_str(trunc_char);
+    if sgr_depth > 0 {
+        out.push_str("\x1b[0m");
+    }
     out
 }
 
@@ -328,7 +354,12 @@ mod tests {
     fn test_trim_line_ansi_long() {
         let result = trim_line_ansi("\x1b[31mhello world\x1b[0m", 8, "…");
         assert!(result.contains("\x1b[31m"));
-        assert!(result.ends_with("…"));
+        let expected_suffix = "…\x1b[0m";
+        assert!(
+            result.ends_with(expected_suffix),
+            "should end with trunc char and reset, got: {:?}",
+            result
+        );
     }
 
     #[test]
@@ -440,7 +471,11 @@ mod tests {
             !result.contains("\x1b[31m…"),
             "should not have dangling ANSI before trunc char"
         );
-        assert!(result.ends_with("…"), "should end with trunc char");
+        assert!(
+            result.ends_with("…\x1b[0m"),
+            "should end with trunc char and reset, got: {:?}",
+            result
+        );
     }
 
     #[test]
@@ -526,7 +561,12 @@ mod tests {
     fn test_trim_line_ansi_truncates_with_color() {
         let result = trim_line_ansi("\x1b[31mhello world\x1b[0m", 8, "…");
         assert!(result.contains("\x1b[31m"));
-        assert!(result.ends_with("…"));
+        let expected_suffix = "…\x1b[0m";
+        assert!(
+            result.ends_with(expected_suffix),
+            "should end with trunc char and reset, got: {:?}",
+            result
+        );
     }
 
     #[test]

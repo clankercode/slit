@@ -174,7 +174,7 @@ impl App {
                     if let Some(Ok(event)) = event {
                         match event {
                             Event::Key(key) => {
-                                if key.code == KeyCode::Char('q')
+                                if key.code == KeyCode::Char('q') || key.code == KeyCode::Char('Q')
                                     || (key.code == KeyCode::Char('c')
                                         && key.modifiers.contains(KeyModifiers::CONTROL))
                                 {

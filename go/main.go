@@ -70,6 +70,7 @@ var rootCmd = &cobra.Command{
 				tw = NewTeeWriter(cfg.Output, cfg.Append)
 			}
 			scanner := bufio.NewScanner(os.Stdin)
+			scanner.Buffer(make([]byte, 0, 1024*1024), 1024*1024)
 			for scanner.Scan() {
 				line := scanner.Text()
 				fmt.Println(line)
@@ -89,6 +90,7 @@ var rootCmd = &cobra.Command{
 
 		go func() {
 			scanner := bufio.NewScanner(os.Stdin)
+			scanner.Buffer(make([]byte, 0, 1024*1024), 1024*1024)
 			for scanner.Scan() {
 				line := scanner.Text()
 				p.Send(lineMsg(line))
