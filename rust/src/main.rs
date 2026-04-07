@@ -53,7 +53,7 @@ pub struct Cli {
     #[arg(long, value_enum, help = "Layout style")]
     pub layout: Option<LayoutType>,
 
-    #[arg(long, help = "Use box layout (shortcut for --layout=box)")]
+    #[arg(long = "box", help = "Use box layout (shortcut for --layout=box)")]
     pub box_layout: bool,
 
     #[arg(long, help = "Use rounded layout (shortcut for --layout=rounded)")]

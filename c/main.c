@@ -445,6 +445,7 @@ int main(int argc, char *argv[]) {
             case 'o':
                 if (cfg.output) free(cfg.output);
                 cfg.output = strdup(optarg);
+                if (!cfg.output) { perror("strdup"); free_config(&cfg); return 1; }
                 break;
             case 'a':
                 cfg.append = 1;
@@ -498,6 +499,7 @@ int main(int argc, char *argv[]) {
                 } else if (strcmp(long_options[option_index].name, "truncation-char") == 0) {
                     if (cfg.truncation_char) free(cfg.truncation_char);
                     cfg.truncation_char = strdup(optarg);
+                    if (!cfg.truncation_char) { perror("strdup"); free_config(&cfg); return 1; }
                 } else if (strcmp(long_options[option_index].name, "layout") == 0) {
                     int lay = parse_layout(optarg);
                     if (lay < 0) {
@@ -528,6 +530,7 @@ int main(int argc, char *argv[]) {
                 } else if (strcmp(long_options[option_index].name, "quote-bg") == 0) {
                     if (cfg.quote_bg) free(cfg.quote_bg);
                     cfg.quote_bg = strdup(optarg);
+                    if (!cfg.quote_bg) { perror("strdup"); free_config(&cfg); return 1; }
                 } else if (strcmp(long_options[option_index].name, "spinner") == 0) {
                     int spin = parse_spinner(optarg);
                     if (spin < 0) {
@@ -539,6 +542,7 @@ int main(int argc, char *argv[]) {
                 } else if (strcmp(long_options[option_index].name, "log-file") == 0) {
                     if (cfg.log_file) free(cfg.log_file);
                     cfg.log_file = strdup(optarg);
+                    if (!cfg.log_file) { perror("strdup"); free_config(&cfg); return 1; }
                 } else if (strcmp(long_options[option_index].name, "generate-man") == 0) {
                     print_manpage();
                     free_config(&cfg);
@@ -699,10 +703,11 @@ int main(int argc, char *argv[]) {
                         dtmp[0] = '\0';
                         int pos = 0;
                         if (cfg.timestamp) {
-                            struct tm *tm_info = localtime(&(entry->arrival));
+                            struct tm tm_buf;
+                            localtime_r(&(entry->arrival), &tm_buf);
                             pos += snprintf(dtmp + pos, sizeof(dtmp) - pos,
                                             "%02d:%02d:%02d ",
-                                            tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec);
+                                            tm_buf.tm_hour, tm_buf.tm_min, tm_buf.tm_sec);
                         }
                         if (cfg.line_numbers) {
                             size_t tl = buffer_total_lines(buf);

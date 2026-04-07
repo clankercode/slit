@@ -308,4 +308,19 @@ mod tests {
         assert_eq!(merged.layout, "box");
         assert!(merged.line_numbers);
     }
+
+    #[test]
+    fn test_box_flag_name() {
+        let cmd = <crate::Cli as clap::CommandFactory>::command();
+        let box_arg = cmd
+            .get_arguments()
+            .find(|a| a.get_id() == "box_layout")
+            .unwrap();
+        let longs: Vec<&str> = box_arg.get_long_and_visible_aliases().unwrap();
+        assert!(
+            longs.contains(&"box"),
+            "--box flag missing, got: {:?}",
+            longs
+        );
+    }
 }
