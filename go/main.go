@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
@@ -162,11 +163,18 @@ var rootCmd = &cobra.Command{
 			p.Send(eofMsg{})
 		}()
 
-		if _, err := p.Run(); err != nil {
+		finalModel, err := p.Run()
+		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(1)
 		}
 
+		if fm, ok := finalModel.(model); ok {
+			view := fm.View()
+			if idx := strings.LastIndex(view, "\n"); idx >= 0 {
+				os.Stderr.WriteString(view[idx+1:] + "\r\n")
+			}
+		}
 		os.Stderr.WriteString("\x1b]0;\x07")
 	},
 }

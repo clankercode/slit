@@ -721,8 +721,10 @@ int main(int argc, char *argv[]) {
     fds[1].fd = tty_fd;
     fds[1].events = POLLIN;
 
-    char *line = NULL;
-    size_t line_len = 0;
+    char stdin_buf[4096];
+    char *pending = NULL;
+    size_t pending_len = 0;
+    size_t pending_cap = 0;
 
     while (!sigint_flag && !eof_reached) {
         int ret = poll(fds, 2, RENDER_INTERVAL_MS);
@@ -759,68 +761,106 @@ int main(int argc, char *argv[]) {
 
         if (ret < 0) continue;
 
-        if (fds[0].revents & POLLIN) {
-            int can_drain = (fds[0].revents & POLLHUP) != 0;
-            do {
-                ssize_t nread = getline(&line, &line_len, stdin);
-                if (nread == -1) {
-                    if (errno == EINTR) continue;
-                    eof_reached = 1;
-                    debug_log("EOF reached, total_lines=%zu", buffer_total_lines(buf));
-                    break;
-                }
-                while (nread > 0 && (line[nread-1] == '\n' || line[nread-1] == '\r')) {
-                    line[--nread] = '\0';
-                }
+        if (fds[0].revents & (POLLIN | POLLHUP)) {
+            ssize_t n = read(STDIN_FILENO, stdin_buf, sizeof(stdin_buf));
+            if (n > 0) {
+                size_t start = 0;
+                for (size_t i = 0; i < (size_t)n; i++) {
+                    if (stdin_buf[i] == '\n') {
+                        size_t frag_len = i - start;
+                        size_t total_len = pending_len + frag_len;
+                        char *line_text = malloc(total_len + 1);
+                        if (line_text) {
+                            if (pending_len > 0) {
+                                memcpy(line_text, pending, pending_len);
+                            }
+                            memcpy(line_text + pending_len, stdin_buf + start, frag_len);
+                            line_text[total_len] = '\0';
+                            size_t trim = total_len;
+                            while (trim > 0 && (line_text[trim-1] == '\r')) {
+                                line_text[--trim] = '\0';
+                            }
 
-                struct line_entry *entry = malloc(sizeof(struct line_entry));
-                if (entry) {
-                    entry->text = strdup(line);
-                    entry->arrival = time(NULL);
-                    entry->line_num = buffer_total_lines(buf) + 1;
-                    entry->byte_len = nread;
-                    buffer_push(buf, entry);
-                }
+                            struct line_entry *entry = malloc(sizeof(struct line_entry));
+                            if (entry) {
+                                entry->text = line_text;
+                                entry->arrival = time(NULL);
+                                entry->line_num = buffer_total_lines(buf) + 1;
+                                entry->byte_len = trim;
+                                buffer_push(buf, entry);
+                            }
 
-                if (tw && entry) {
-                    if (cfg.tee_format == TEE_DISPLAY) {
-                        char dtmp[4096], stripped[4096];
-                        dtmp[0] = '\0';
-                        int pos = 0;
-                        if (cfg.timestamp) {
-                            struct tm tm_buf;
-                            localtime_r(&(entry->arrival), &tm_buf);
-                            pos += snprintf(dtmp + pos, sizeof(dtmp) - pos,
-                                            "%02d:%02d:%02d ",
-                                            tm_buf.tm_hour, tm_buf.tm_min, tm_buf.tm_sec);
+                            if (tw && entry) {
+                                if (cfg.tee_format == TEE_DISPLAY) {
+                                    char dtmp[4096], stripped[4096];
+                                    dtmp[0] = '\0';
+                                    int pos = 0;
+                                    if (cfg.timestamp) {
+                                        struct tm tm_buf;
+                                        localtime_r(&(entry->arrival), &tm_buf);
+                                        pos += snprintf(dtmp + pos, sizeof(dtmp) - pos,
+                                                        "%02d:%02d:%02d ",
+                                                        tm_buf.tm_hour, tm_buf.tm_min, tm_buf.tm_sec);
+                                    }
+                                    if (cfg.line_numbers) {
+                                        size_t tl = buffer_total_lines(buf);
+                                        int gw = 1;
+                                        while (tl >= 10) { tl /= 10; gw++; }
+                                        pos += snprintf(dtmp + pos, sizeof(dtmp) - pos,
+                                                        "%*zu ", gw, entry->line_num);
+                                    }
+                                    if (cfg.color == COLOR_NEVER || (cfg.color == COLOR_AUTO && !is_stderr_tty())) {
+                                        strip_ansi(line_text, stripped, sizeof(stripped));
+                                        snprintf(dtmp + pos, sizeof(dtmp) - pos, "%s", stripped);
+                                    } else {
+                                        snprintf(dtmp + pos, sizeof(dtmp) - pos, "%s", line_text);
+                                    }
+                                    tee_write_line(tw, dtmp);
+                                } else {
+                                    tee_write_line(tw, line_text);
+                                }
+                            } else if (tw) {
+                                tee_write_line(tw, line_text);
+                            }
                         }
-                        if (cfg.line_numbers) {
-                            size_t tl = buffer_total_lines(buf);
-                            int gw = 1;
-                            while (tl >= 10) { tl /= 10; gw++; }
-                            pos += snprintf(dtmp + pos, sizeof(dtmp) - pos,
-                                            "%*zu ", gw, entry->line_num);
-                        }
-                        if (cfg.color == COLOR_NEVER || (cfg.color == COLOR_AUTO && !is_stderr_tty())) {
-                            strip_ansi(line, stripped, sizeof(stripped));
-                            snprintf(dtmp + pos, sizeof(dtmp) - pos, "%s", stripped);
-                        } else {
-                            snprintf(dtmp + pos, sizeof(dtmp) - pos, "%s", line);
-                        }
-                        tee_write_line(tw, dtmp);
-                    } else {
-                        tee_write_line(tw, line);
+                        pending_len = 0;
+                        start = i + 1;
+                        dirty = 1;
                     }
-                } else if (tw) {
-                    tee_write_line(tw, line);
                 }
-
-                dirty = 1;
-            } while (can_drain);
-        }
-
-        if ((fds[0].revents & POLLHUP) && !(fds[0].revents & POLLIN)) {
-            eof_reached = 1;
+                if (start < (size_t)n) {
+                    size_t frag_len = (size_t)n - start;
+                    if (pending_len + frag_len > pending_cap) {
+                        pending_cap = pending_len + frag_len;
+                        pending = realloc(pending, pending_cap);
+                    }
+                    if (pending) {
+                        memcpy(pending + pending_len, stdin_buf + start, frag_len);
+                        pending_len += frag_len;
+                    }
+                }
+            } else if (n == 0 || (errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK)) {
+                if (pending_len > 0 && pending) {
+                    pending[pending_len] = '\0';
+                    size_t trim = pending_len;
+                    while (trim > 0 && (pending[trim-1] == '\r')) {
+                        pending[--trim] = '\0';
+                    }
+                    struct line_entry *entry = malloc(sizeof(struct line_entry));
+                    if (entry) {
+                        entry->text = strdup(pending);
+                        entry->arrival = time(NULL);
+                        entry->line_num = buffer_total_lines(buf) + 1;
+                        entry->byte_len = trim;
+                        buffer_push(buf, entry);
+                        if (tw) tee_write_line(tw, entry->text);
+                    }
+                    dirty = 1;
+                    pending_len = 0;
+                }
+                eof_reached = 1;
+                debug_log("EOF reached, total_lines=%zu", buffer_total_lines(buf));
+            }
         }
 
         if (fds[1].revents & POLLIN) {
@@ -869,7 +909,7 @@ int main(int argc, char *argv[]) {
     debug_log("slit exiting");
     debug_close();
     buffer_free(buf);
-    free(line);
+    free(pending);
     free_config(&cfg);
     return 0;
 }
