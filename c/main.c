@@ -294,7 +294,7 @@ static void passthrough_mode(struct slit_config *cfg) {
     }
 
     char **tail_buf = calloc(n, sizeof(char *));
-    if (!tail_buf) { perror("calloc"); free(line); if (tw) tee_close(tw); return; }
+    if (!tail_buf) { perror("calloc"); free(line); if (tw) tee_close(tw); debug_log("passthrough mode done"); debug_close(); return; }
     size_t tail_head = 0;
     size_t tail_count = 0;
 
@@ -319,7 +319,18 @@ static void passthrough_mode(struct slit_config *cfg) {
         printf("... [%lld lines omitted] ...\n", omitted);
     for (size_t i = 0; i < tail_count; i++) {
         size_t idx = (tail_head + i) % n;
-        fputs(tail_buf[idx], stdout);
+        if (fputs(tail_buf[idx], stdout) == EOF) {
+            for (size_t j = i; j < tail_count; j++) {
+                size_t jdx = (tail_head + j) % n;
+                free(tail_buf[jdx]);
+            }
+            free(tail_buf);
+            free(line);
+            if (tw) tee_close(tw);
+            debug_log("passthrough: stdout write error");
+            debug_close();
+            return;
+        }
         free(tail_buf[idx]);
     }
 
