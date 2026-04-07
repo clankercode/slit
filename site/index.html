@@ -836,7 +836,7 @@
     <div class="feature reveal delay-2">
       <span class="feature-number">03</span>
       <h3>Pipe-safe passthrough</h3>
-      <p>Not a tty? slit steps aside automatically. Use it anywhere in a pipeline without breaking downstream consumers or CI logs.</p>
+      <p>Not a tty? slit shows the first and last 10 lines of the stream — enough context without flooding logs. Use <code>-n 0</code> to pipe everything through, or <code>-n N</code> to change the window.</p>
       <span class="feature-accent">→ SLIT_FORCE_RENDER=1 to override</span>
     </div>
     <div class="feature reveal">

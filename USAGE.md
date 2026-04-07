@@ -65,7 +65,7 @@ ls --color=always | slit --color=always
 
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
-| `--lines` | `-n` | `0` (auto) | Pane height. `0` = terminal height minus layout chrome |
+| `--lines` | `-n` | `0` (auto) | Pane height. `0` = terminal height minus layout chrome. In passthrough mode: default shows first+last 10 lines; `0` = pipe all |
 | `--layout` | | `minimal` | Layout style: `minimal`, `box`, `rounded`, `compact`, `none`, `quote` |
 | `--wrap` | `-w` | `false` | Wrap long lines instead of truncating |
 | `--line-numbers` | `-l` | `false` | Show line numbers in gutter |
@@ -382,7 +382,7 @@ cd c && make test
 
 ### Pipe to slit and another command
 
-When stderr isn't a TTY, slit automatically falls back to passthrough mode (copies stdin to stdout). This makes it pipe-safe:
+When stderr isn't a TTY, slit shows the first 10 and last 10 lines of the stream. Use `-n N` to change the window, or `-n 0` to pipe everything through unchanged. This makes it pipe-safe:
 
 ```sh
 make build 2>&1 | slit | grep ERROR
