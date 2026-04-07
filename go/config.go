@@ -35,6 +35,7 @@ type FileConfig struct {
 
 type Config struct {
 	Lines          int
+	LinesChanged   bool
 	MaxLines       int
 	Output         string
 	Append         bool

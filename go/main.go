@@ -70,25 +70,68 @@ var rootCmd = &cobra.Command{
 
 		forceRender := os.Getenv("SLIT_FORCE_RENDER") == "1"
 		if !forceRender && !term.IsTerminal(int(os.Stderr.Fd())) {
+			n := 10
+			if cfg.LinesChanged {
+				n = cfg.Lines
+			}
+
 			var tw *TeeWriter
 			if cfg.Output != "" {
 				tw = NewTeeWriter(cfg.Output, cfg.Append)
 			}
 			scanner := bufio.NewScanner(os.Stdin)
 			scanner.Buffer(make([]byte, 0, 1024*1024), 1024*1024)
-			for scanner.Scan() {
-				line := scanner.Text()
-				fmt.Println(line)
-				if tw != nil {
-					tw.WriteLine(line)
+
+			if n == 0 {
+				// -n 0: pipe everything through
+				for scanner.Scan() {
+					line := scanner.Text()
+					fmt.Println(line)
+					if tw != nil { tw.WriteLine(line) }
+				}
+			} else {
+				// head+tail mode
+				total := 0
+
+				// Phase 1: head
+				for total < n && scanner.Scan() {
+					line := scanner.Text()
+					fmt.Println(line)
+					if tw != nil { tw.WriteLine(line) }
+					total++
+				}
+
+				// Phase 2: circular tail buffer
+				tailBuf := make([]string, n)
+				tailHead := 0
+				tailCount := 0
+				for scanner.Scan() {
+					line := scanner.Text()
+					if tw != nil { tw.WriteLine(line) }
+					total++
+					if tailCount < n {
+						tailBuf[(tailHead+tailCount)%n] = line
+						tailCount++
+					} else {
+						tailBuf[tailHead] = line
+						tailHead = (tailHead + 1) % n
+					}
+				}
+
+				// Phase 3: separator + tail
+				omitted := total - n - tailCount
+				if omitted > 0 {
+					fmt.Printf("... [%d lines omitted] ...\n", omitted)
+				}
+				for i := 0; i < tailCount; i++ {
+					fmt.Println(tailBuf[(tailHead+i)%n])
 				}
 			}
+
 			if err := scanner.Err(); err != nil {
 				fmt.Fprintf(os.Stderr, "slit: stdin read error: %v\n", err)
 			}
-			if tw != nil {
-				tw.Close()
-			}
+			if tw != nil { tw.Close() }
 			return
 		}
 
@@ -119,7 +162,7 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.Flags().IntVarP(&flagLines, "lines", "n", 0, "Number of lines to display (0 = auto, 2/3 terminal height, min 10)")
+	rootCmd.Flags().IntVarP(&flagLines, "lines", "n", 0, "Number of lines to display (0 = auto, 2/3 terminal height, min 10); in passthrough mode: default is head+tail with N=10, 0 = pipe all")
 	rootCmd.Flags().IntVar(&flagMaxLines, "max-lines", 50000, "Maximum number of lines to buffer")
 	rootCmd.Flags().StringVarP(&flagOutput, "output", "o", "", "Write output to file")
 	rootCmd.Flags().BoolVarP(&flagAppend, "append", "a", false, "Append to output file instead of overwriting")
@@ -216,6 +259,7 @@ func resolveConfig(cmd *cobra.Command) (*Config, error) {
 
 	if cmd.Flags().Changed("lines") {
 		cfg.Lines = flagLines
+		cfg.LinesChanged = true
 	}
 	if cmd.Flags().Changed("max-lines") {
 		cfg.MaxLines = flagMaxLines
