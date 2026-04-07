@@ -118,3 +118,8 @@ jobs:
           else
             gh release create "$GITHUB_REF_NAME" "${files[@]}" --generate-notes --verify-tag --repo "$GITHUB_REPOSITORY"
           fi
+
+      - name: Rebuild site with new version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run pages.yml --ref master --repo "$GITHUB_REPOSITORY"
