@@ -71,8 +71,8 @@ pub struct Cli {
     #[arg(long, help = "Use quote layout (shortcut for --layout=quote)")]
     pub quote: bool,
 
-    #[arg(long, value_enum, help = "Quote background style")]
-    pub quote_bg: Option<QuoteBg>,
+    #[arg(long, help = "Quote background color (hex) or 'off'")]
+    pub quote_bg: Option<String>,
 
     #[arg(long, value_enum, help = "Spinner style (braille, dots, arrows, off)")]
     pub spinner: Option<SpinnerStyle>,
@@ -127,12 +127,6 @@ pub enum LayoutType {
     Minimal,
     None,
     Quote,
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-pub enum QuoteBg {
-    Off,
-    On,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]

@@ -151,8 +151,8 @@ impl Config {
             self.layout = layout;
         }
 
-        if let Some(quote_bg) = cli.quote_bg {
-            self.quote_bg = format!("{:?}", quote_bg).to_lowercase();
+        if let Some(quote_bg) = &cli.quote_bg {
+            self.quote_bg = quote_bg.clone();
         }
         if let Some(spinner) = cli.spinner {
             self.spinner = format!("{:?}", spinner).to_lowercase();

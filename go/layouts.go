@@ -40,7 +40,7 @@ func padRight(s string, width int) string {
 	return s + strings.Repeat(" ", width-vis)
 }
 
-func RenderLayout(layout Layout, title string, content string, status string, width int) string {
+func RenderLayout(layout Layout, title string, content string, status string, width int, quoteBg string) string {
 	switch layout.Name {
 	case "box":
 		return renderBox(title, content, status, width, "┌", "┐", "└", "┘", "─", "│")
@@ -53,7 +53,7 @@ func RenderLayout(layout Layout, title string, content string, status string, wi
 	case "none":
 		return content
 	case "quote":
-		return renderQuote(title, content, status)
+		return renderQuote(title, content, status, width, quoteBg)
 	default:
 		return content
 	}
@@ -108,13 +108,57 @@ func renderMinimal(content string, status string) string {
 	return content + "\n" + status
 }
 
-func renderQuote(title string, content string, status string) string {
+func renderQuote(title string, content string, status string, width int, quoteBg string) string {
+	useBg := quoteBg != "" && quoteBg != "off" && strings.HasPrefix(quoteBg, "#") && len(quoteBg) >= 7
+	var r, g, b int
+	if useBg {
+		fmt.Sscanf(quoteBg[1:], "%02x%02x%02x", &r, &g, &b)
+	}
+
+	bgStart := fmt.Sprintf("\x1b[48;2;%d;%d;%dm", r, g, b)
+	bgEnd := "\x1b[0m"
+	bar := "▌"
+
 	var sb strings.Builder
-	sb.WriteString("▌ " + title + "\n")
+	if useBg {
+		sb.WriteString(bgStart)
+	}
+	sb.WriteString(bar + " " + title)
+	if useBg {
+		pad := width - VisibleWidth(bar+" "+title)
+		if pad > 0 {
+			sb.WriteString(strings.Repeat(" ", pad))
+		}
+		sb.WriteString(bgEnd)
+	}
+	sb.WriteString("\n")
+
 	lines := strings.Split(content, "\n")
 	for _, line := range lines {
-		sb.WriteString("▌ " + line + "\n")
+		if useBg {
+			sb.WriteString(bgStart)
+		}
+		sb.WriteString(bar + " " + line)
+		if useBg {
+			pad := width - VisibleWidth(bar+" "+line)
+			if pad > 0 {
+				sb.WriteString(strings.Repeat(" ", pad))
+			}
+			sb.WriteString(bgEnd)
+		}
+		sb.WriteString("\n")
 	}
-	sb.WriteString("▌ " + status)
+
+	if useBg {
+		sb.WriteString(bgStart)
+	}
+	sb.WriteString(bar + " " + status)
+	if useBg {
+		pad := width - VisibleWidth(bar+" "+status)
+		if pad > 0 {
+			sb.WriteString(strings.Repeat(" ", pad))
+		}
+		sb.WriteString(bgEnd)
+	}
 	return sb.String()
 }

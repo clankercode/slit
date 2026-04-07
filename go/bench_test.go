@@ -138,7 +138,7 @@ func BenchmarkRenderLayoutMinimal(b *testing.B) {
 	status := FormatStatusLine("braille", 0, false, 20, 1024, 0, 80)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		RenderLayout(layout, "slit", content, status, 80)
+		RenderLayout(layout, "slit", content, status, 80, "off")
 	}
 }
 
@@ -152,7 +152,7 @@ func BenchmarkRenderLayoutBox(b *testing.B) {
 	status := FormatStatusLine("braille", 0, false, 20, 1024, 0, 76)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		RenderLayout(layout, "slit", content, status, 80)
+		RenderLayout(layout, "slit", content, status, 80, "off")
 	}
 }
 

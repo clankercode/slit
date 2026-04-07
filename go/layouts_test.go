@@ -55,7 +55,7 @@ func TestLayoutChromeCosts(t *testing.T) {
 
 func TestRenderLayoutBox(t *testing.T) {
 	layout := GetLayout("box")
-	result := RenderLayout(layout, "slit", "hello", "status", 40)
+	result := RenderLayout(layout, "slit", "hello", "status", 40, "off")
 	if !strings.Contains(result, "┌") || !strings.Contains(result, "┐") {
 		t.Errorf("box layout missing corners: %q", result)
 	}
@@ -72,7 +72,7 @@ func TestRenderLayoutBox(t *testing.T) {
 
 func TestRenderLayoutRounded(t *testing.T) {
 	layout := GetLayout("rounded")
-	result := RenderLayout(layout, "slit", "hello", "status", 40)
+	result := RenderLayout(layout, "slit", "hello", "status", 40, "off")
 	if !strings.Contains(result, "╭") || !strings.Contains(result, "╮") {
 		t.Errorf("rounded layout missing corners: %q", result)
 	}
@@ -83,7 +83,7 @@ func TestRenderLayoutRounded(t *testing.T) {
 
 func TestRenderLayoutMinimal(t *testing.T) {
 	layout := GetLayout("minimal")
-	result := RenderLayout(layout, "slit", "hello", "status", 40)
+	result := RenderLayout(layout, "slit", "hello", "status", 40, "off")
 	if !strings.Contains(result, "hello") {
 		t.Errorf("minimal layout missing content: %q", result)
 	}
@@ -97,7 +97,7 @@ func TestRenderLayoutMinimal(t *testing.T) {
 
 func TestRenderLayoutNone(t *testing.T) {
 	layout := GetLayout("none")
-	result := RenderLayout(layout, "slit", "hello", "status", 40)
+	result := RenderLayout(layout, "slit", "hello", "status", 40, "off")
 	if !strings.Contains(result, "hello") {
 		t.Errorf("none layout missing content: %q", result)
 	}
@@ -108,7 +108,7 @@ func TestRenderLayoutNone(t *testing.T) {
 
 func TestRenderLayoutQuote(t *testing.T) {
 	layout := GetLayout("quote")
-	result := RenderLayout(layout, "slit", "hello", "status", 40)
+	result := RenderLayout(layout, "slit", "hello", "status", 40, "off")
 	if !strings.Contains(result, "▌") {
 		t.Errorf("quote layout missing marker: %q", result)
 	}
@@ -119,7 +119,7 @@ func TestRenderLayoutQuote(t *testing.T) {
 
 func TestRenderLayoutCompact(t *testing.T) {
 	layout := GetLayout("compact")
-	result := RenderLayout(layout, "slit", "hello", "status", 40)
+	result := RenderLayout(layout, "slit", "hello", "status", 40, "off")
 	if !strings.Contains(result, "hello") {
 		t.Errorf("compact layout missing content: %q", result)
 	}
@@ -130,7 +130,7 @@ func TestRenderLayoutCompact(t *testing.T) {
 
 func TestRenderLayoutBoxWidthAlignment(t *testing.T) {
 	layout := GetLayout("box")
-	result := RenderLayout(layout, "slit", "content", "status", 40)
+	result := RenderLayout(layout, "slit", "content", "status", 40, "off")
 	lines := strings.Split(result, "\n")
 	for _, line := range lines {
 		if line == "" {

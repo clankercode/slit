@@ -234,7 +234,7 @@ func (m model) View() string {
 
 	title := "slit"
 
-	return RenderLayout(layout, title, content, status, m.width)
+	return RenderLayout(layout, title, content, status, m.width, m.cfg.QuoteBg)
 }
 
 func (m model) formatAndWriteDisplayTee(entry LineEntry) {

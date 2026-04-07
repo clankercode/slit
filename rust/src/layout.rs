@@ -81,6 +81,7 @@ pub fn render_layout(
     content_lines: &[String],
     status: &str,
     width: u16,
+    quote_bg: &str,
 ) -> Vec<String> {
     match layout {
         Layout::Box => render_box_layout(
@@ -110,7 +111,7 @@ pub fn render_layout(
         Layout::Compact => render_compact_layout(title, content_lines, status, width),
         Layout::Minimal => render_minimal_layout(content_lines, status),
         Layout::None => content_lines.to_vec(),
-        Layout::Quote => render_quote_layout(title, content_lines, status),
+        Layout::Quote => render_quote_layout(title, content_lines, status, width, quote_bg),
     }
 }
 
@@ -210,13 +211,78 @@ fn render_minimal_layout(content_lines: &[String], status: &str) -> Vec<String> 
     lines
 }
 
-fn render_quote_layout(title: &str, content_lines: &[String], status: &str) -> Vec<String> {
+fn render_quote_layout(
+    title: &str,
+    content_lines: &[String],
+    status: &str,
+    width: u16,
+    quote_bg: &str,
+) -> Vec<String> {
+    let use_bg = quote_bg != "off" && quote_bg.starts_with('#') && quote_bg.len() >= 7;
+    let (r, g, b) = if use_bg {
+        let hex = &quote_bg[1..];
+        let rv = u8::from_str_radix(&hex[0..2], 16).unwrap_or(0);
+        let gv = u8::from_str_radix(&hex[2..4], 16).unwrap_or(0);
+        let bv = u8::from_str_radix(&hex[4..6], 16).unwrap_or(0);
+        (rv, gv, bv)
+    } else {
+        (0, 0, 0)
+    };
+
+    let bg_start = format!("\x1b[48;2;{};{};{}m", r, g, b);
+    let bg_end = "\x1b[0m".to_string();
+    let bar = "▌";
+    let w = width as usize;
+
     let mut lines = Vec::new();
-    lines.push(format!("▌ {}", title));
-    for line in content_lines {
-        lines.push(format!("▌ {}", line));
+
+    let title_line = format!("{} {}", bar, title);
+    if use_bg {
+        let vis = crate::render::ansi_visible_width(&title_line);
+        let pad = w.saturating_sub(vis);
+        lines.push(format!(
+            "{}{}{}{}",
+            bg_start,
+            title_line,
+            " ".repeat(pad),
+            bg_end
+        ));
+    } else {
+        lines.push(title_line);
     }
-    lines.push(format!("▌ {}", status));
+
+    for line in content_lines {
+        let content_line = format!("{} {}", bar, line);
+        if use_bg {
+            let vis = crate::render::ansi_visible_width(&content_line);
+            let pad = w.saturating_sub(vis);
+            lines.push(format!(
+                "{}{}{}{}",
+                bg_start,
+                content_line,
+                " ".repeat(pad),
+                bg_end
+            ));
+        } else {
+            lines.push(content_line);
+        }
+    }
+
+    let status_line = format!("{} {}", bar, status);
+    if use_bg {
+        let vis = crate::render::ansi_visible_width(&status_line);
+        let pad = w.saturating_sub(vis);
+        lines.push(format!(
+            "{}{}{}{}",
+            bg_start,
+            status_line,
+            " ".repeat(pad),
+            bg_end
+        ));
+    } else {
+        lines.push(status_line);
+    }
+
     lines
 }
 
@@ -290,7 +356,7 @@ mod tests {
     #[test]
     fn test_minimal_layout_render() {
         let lines = vec!["line1".to_string(), "line2".to_string()];
-        let result = render_layout(Layout::Minimal, "slit", &lines, "status", 80);
+        let result = render_layout(Layout::Minimal, "slit", &lines, "status", 80, "off");
         assert_eq!(result.len(), 3);
         assert_eq!(result[0], "line1");
         assert_eq!(result[1], "line2");
@@ -300,7 +366,7 @@ mod tests {
     #[test]
     fn test_render_layout_box() {
         let lines = vec!["hello".to_string()];
-        let result = render_layout(Layout::Box, "slit", &lines, "ok", 20);
+        let result = render_layout(Layout::Box, "slit", &lines, "ok", 20, "off");
         assert!(result[0].contains("┌"));
         assert!(result[0].contains("┐"));
         assert!(result.last().unwrap().contains("└"));
@@ -311,7 +377,7 @@ mod tests {
     #[test]
     fn test_render_layout_rounded() {
         let lines = vec!["hello".to_string()];
-        let result = render_layout(Layout::Rounded, "slit", &lines, "ok", 20);
+        let result = render_layout(Layout::Rounded, "slit", &lines, "ok", 20, "off");
         assert!(result[0].contains("╭"));
         assert!(result[0].contains("╮"));
     }
@@ -319,7 +385,7 @@ mod tests {
     #[test]
     fn test_render_layout_none() {
         let lines = vec!["hello".to_string()];
-        let result = render_layout(Layout::None, "slit", &lines, "status", 20);
+        let result = render_layout(Layout::None, "slit", &lines, "status", 20, "off");
         assert_eq!(result.len(), 1);
         assert_eq!(result[0], "hello");
     }
@@ -327,14 +393,14 @@ mod tests {
     #[test]
     fn test_render_layout_quote() {
         let lines = vec!["hello".to_string()];
-        let result = render_layout(Layout::Quote, "slit", &lines, "status", 20);
+        let result = render_layout(Layout::Quote, "slit", &lines, "status", 20, "off");
         assert!(result.iter().any(|l| l.contains("▌")));
     }
 
     #[test]
     fn test_render_layout_compact() {
         let lines = vec!["hello".to_string()];
-        let result = render_layout(Layout::Compact, "slit", &lines, "status", 20);
+        let result = render_layout(Layout::Compact, "slit", &lines, "status", 20, "off");
         assert!(result.len() >= 3);
         assert!(result.iter().any(|l| l.contains("hello")));
     }
@@ -342,7 +408,7 @@ mod tests {
     #[test]
     fn test_box_width_alignment() {
         let lines = vec!["hello".to_string()];
-        let result = render_layout(Layout::Box, "slit", &lines, "ok", 20);
+        let result = render_layout(Layout::Box, "slit", &lines, "ok", 20, "off");
         for line in &result {
             assert_eq!(
                 unicode_width::UnicodeWidthStr::width(line.as_str()),

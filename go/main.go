@@ -138,7 +138,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&flagMinimal, "minimal", false, "Use minimal layout (shortcut for --layout=minimal)")
 	rootCmd.Flags().BoolVar(&flagNone, "none", false, "Use no layout (shortcut for --layout=none)")
 	rootCmd.Flags().BoolVar(&flagQuote, "quote", false, "Use quote layout (shortcut for --layout=quote)")
-	rootCmd.Flags().StringVar(&flagQuoteBg, "quote-bg", "off", "Quote background style")
+	rootCmd.Flags().StringVar(&flagQuoteBg, "quote-bg", "off", "Quote background color (hex) or 'off'")
 	rootCmd.Flags().StringVar(&flagSpinner, "spinner", "braille", "Spinner style (braille, dots, arrows, off)")
 
 	rootCmd.Flags().BoolVarP(&flagDebug, "debug", "d", false, "Enable debug logging")
